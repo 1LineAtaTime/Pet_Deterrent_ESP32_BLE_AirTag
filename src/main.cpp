@@ -3,11 +3,13 @@
 #include <BLEScan.h>
 #include <Arduino.h>
 #include <credentials.h>
+#include <WiFi.h>
+#include "fauxmoESP.h"
 
 #define LED 2
 
 int CUTOFF_PLANTS = -35;
-int CUTOFF_ROOM = -80;
+int CUTOFF_ROOM = -77;
 const int CUTOFF = CUTOFF_PLANTS;
 
 void setup() {
