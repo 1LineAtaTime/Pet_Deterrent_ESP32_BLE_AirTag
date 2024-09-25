@@ -1,4 +1,4 @@
-#define FIRMWARE_VERSION "1.0.1"
+#define FIRMWARE_VERSION "1.0.2"
 
 #include <Arduino.h>
 #include <credentials.h>
@@ -11,9 +11,12 @@
 #include "SinricPro.h"
 #include "SinricProContactsensor.h"
 #include "ESP32OTAHelper.h"
+#include "HealthDiagnostics.h"
 
 #define LED 2
 #define BAUD_RATE 115200
+
+HealthDiagnostics healthDiagnostics;
 
 const int CUTOFF_PLANTS = -39;
 const int CUTOFF_ROOM = -77;
@@ -111,6 +114,9 @@ void setupSinricPro() {
     SinricPro.onConnected([](){ Serial.printf("[Sinric Pro]: Connected\r\n"); });
     SinricPro.onDisconnected([](){ Serial.printf("[Sinric Pro]: Disconnected\r\n"); });
     SinricPro.onOTAUpdate(handleOTAUpdate);
+    SinricPro.onReportHealth([&](String &healthReport) {
+        return healthDiagnostics.reportHealth(healthReport);
+    });  
     SinricPro.begin(APP_KEY, APP_SECRET);
     
     Serial.printf("[Sinric Pro]: Connecting\r\n");

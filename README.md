@@ -12,9 +12,9 @@ https://portal.sinric.pro/dashboard can be used to manage the devices (see statu
 
 Notes:
 
-RAM:   [==        ]  16.5% (used 53988 bytes from 327680 bytes)
+RAM:   [==        ]  16.5% (used 53996 bytes from 327680 bytes)
 
-Flash: [========= ]  89.4% (used 1171605 bytes from 1310720 bytes)
+Flash: [========= ]  89.9% (used 1177925 bytes from 1310720 bytes)
 
 Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit https://github.com/arduino-libraries/ArduinoBLE/pull/53/commits/ae4891dc4bfe19903201e94b93b8b24e288e7fa1 to fix manufacturerData() function. I'm sure it's just on my end, but I couldn't make it work with the default ArduinoBLE library.
 
