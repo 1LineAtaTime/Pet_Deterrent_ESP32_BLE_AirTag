@@ -3,9 +3,7 @@
 #include <Arduino.h>
 #include <credentials.h>
 
-// Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit https://github.com/arduino-libraries/ArduinoBLE/pull/53/commits/ae4891dc4bfe19903201e94b93b8b24e288e7fa1 to fix manufacturerData()
-// Tried using Bluedroid (BLEdevice) library but it was too heavy for my mini ESP32
-// Also tried using NimBLE library, but it seems like the Arduino library is no longer compatible with some MCU's unless using ESP-IDF
+// Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit
 #include "ArduinoBLE.h"
 
 #include "SemVer.h"
@@ -84,14 +82,21 @@ void handleContactsensor() {
 
 // setup function for WiFi connection
 void setupWiFi() {
+    unsigned long actualMillis = millis();
+
     Serial.printf("[WiFi]: Connecting");
     WiFi.setAutoReconnect(true);
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 
     while (WiFi.status() != WL_CONNECTED) {
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
         Serial.printf("...");
         delay(250);
+        if (millis() - actualMillis > 20000)
+            return;
     }
     IPAddress localIP = WiFi.localIP();
     Serial.printf("connected!\r\n[WiFi]: IP-Address is %d.%d.%d.%d\r\n", localIP[0], localIP[1], localIP[2], localIP[3]);
@@ -175,13 +180,6 @@ void loop() {
 
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[WiFi]: Dropped connection\r\n");
-        digitalWrite(LED, HIGH);
-        delay(100);
-        digitalWrite(LED, LOW);
-        delay(100);
-        digitalWrite(LED, HIGH);
-        delay(100);
-        digitalWrite(LED, LOW);
         setupWiFi();
     }
 
