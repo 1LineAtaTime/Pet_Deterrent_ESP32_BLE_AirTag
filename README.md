@@ -1,4 +1,4 @@
-Mini ESP32 with BLE scaning, WiFi, Alexa integration and OTA through Sinric Pro.
+Mini ESP32 with BLE scanning, WiFi, Alexa integration and OTA through Sinric Pro.
 
 This program transforms an ESP32 into an AirTag detector (or any other BLE / BlueTooth device) and pushes notifications to a dashboard on Sinric Pro, which manages the OTAs and the Alexa integration. 
 
