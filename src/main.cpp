@@ -6,12 +6,12 @@
 // Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit
 #include "ArduinoBLE.h"
 
-#include "SemVer.h"
+#include "OTA/SemVer.h"
 #include <WiFi.h>
 #include "SinricPro.h"
 #include "SinricProContactsensor.h"
-#include "ESP32OTAHelper.h"
-#include "HealthDiagnostics.h"
+#include "OTA/ESP32OTAHelper.h"
+#include "Health/HealthDiagnostics.h"
 
 #define LED 2
 #define BAUD_RATE 115200
