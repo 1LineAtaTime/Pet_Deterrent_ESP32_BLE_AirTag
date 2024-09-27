@@ -1,4 +1,4 @@
-#define FIRMWARE_VERSION "1.0.2"
+#define FIRMWARE_VERSION "1.0.4"
 
 #include <Arduino.h>
 #include <credentials.h>
@@ -14,19 +14,23 @@
 #include "Health/HealthDiagnostics.h"
 
 #define LED 2
+#define BUZZER 21
 #define BAUD_RATE 115200
 
-HealthDiagnostics healthDiagnostics;
-
-const int CUTOFF_PLANTS = -39;
-const int CUTOFF_ROOM = -77;
-const int CUTOFF = CUTOFF_PLANTS;
-
+#ifndef LOCATION_ROOM
+    // Sensor for Plants
+   const int CUTOFF = -39;
+#else 
+    //  Sensor for Room
+    const int CUTOFF = -65;
+#endif
+    
 const int debounceTime = 10000;
 bool lastContactState = false;
 unsigned long lastChange = 0;
 unsigned long tagFound = 0;
 
+HealthDiagnostics healthDiagnostics;
 
 bool handleOTAUpdate(const String& url, int major, int minor, int patch, bool forceUpdate) {
   Version currentVersion  = Version(FIRMWARE_VERSION);
@@ -163,6 +167,7 @@ void setup() {
     delay(100);
     Serial.printf("\r\n[ESP32]: Started with Firmware Version: %s\r\n", FIRMWARE_VERSION);
     pinMode(LED, OUTPUT);
+    pinMode(BUZZER, OUTPUT);
     
     setupWiFi();
 
@@ -178,11 +183,19 @@ void setup() {
 }
 
 void loop() {
+    unsigned long actualMillis = millis();
+
     // Keep scanning for BLE devices
     scanBLEDevices();
     
-    // Wait for a while before starting the next scan
     delay(100);
+
+    // Beep only for ~2 seconds
+    if (digitalRead(LED) && (actualMillis - tagFound <= 2000)) {
+        digitalWrite(BUZZER, HIGH);
+        delay(200);
+        digitalWrite(BUZZER, LOW);
+    }
 
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[WiFi]: Dropped connection\r\n");

@@ -20,4 +20,6 @@ Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit https://githu
 
 Tried using Bluedroid (BLEdevice) library but it was too heavy for my CP2102 CH9102F D1 Mini ESP32.
 
-Also tried using NimBLE library, but it seems like the Arduino library is no longer compatible with some MCU's unless using ESP-IDF
+Also tried using NimBLE library, but it seems like the Arduino library is no longer compatible with some MCU's unless using ESP-IDF.
+
+We could have technically removed the OTA function, the ESP32's OTA partition, and doubled the size of the available program size... but I have 3 of these ESP32 around the house and I really like the OTA function. An alternative is reducing the SPIFFS partition while leaving OTA intact with min_spiffs.csv in Platformio.ini resulting on a Flash usage of 59.9% instead of 89.9%
