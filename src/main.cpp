@@ -27,6 +27,7 @@
     
 const int debounceTime = 10000;
 bool lastContactState = false;
+bool startUp = true;
 unsigned long lastChange = 0;
 unsigned long tagFound = 0;
 
@@ -68,20 +69,24 @@ bool handleOTAUpdate(const String& url, int major, int minor, int patch, bool fo
 void handleContactsensor() {
     if (SinricPro.isConnected() == false) {
         Serial.printf("[Sinric Pro]: Not connected...!\r\n");
-        return; 
+        startUp = true; // we reset the startUp bool in case we get disconnected. Sometimes the contact sensor on SinricPro shows up as Closed even though it is not
+        return;
     }
 
     unsigned long actualMillis = millis();
-    if (actualMillis - lastChange < debounceTime) return;          // debounce contact state transitions (same as debouncing a pushbutton). Changed to 2 seconds
+    if (actualMillis - lastChange < debounceTime) return; // debounce contact state transitions (same as debouncing a pushbutton). Changed to 2 seconds
 
     bool actualContactState = digitalRead(LED);   // read actual state of contactsensor
     
     delay(100);
     
-    if (actualContactState != lastContactState) {         // if state has changed
+    if ((startUp) or (actualContactState != lastContactState)) {         // if state has changed
         Serial.printf("[Sinric Pro]: Contactsensor is %s now\r\n", actualContactState?"closed":"open");
         lastContactState = actualContactState;              // update last known state
-        lastChange = actualMillis;                          // update debounce time
+        if (!startUp) {
+            lastChange = actualMillis;                      // update debounce time
+        }
+        startUp = false;                                    // reset it, since we are no longer at startup after this
         SinricProContactsensor &myContact = SinricPro[CONTACT_ID]; // get contact sensor device
         myContact.sendContactEvent(actualContactState);      // send event with actual state
     }
