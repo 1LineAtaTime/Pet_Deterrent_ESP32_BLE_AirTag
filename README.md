@@ -12,15 +12,8 @@ https://portal.sinric.pro/dashboard can be used to manage the devices (see statu
 
 Notes:
 
-RAM:   [==        ]  16.5% (used 53996 bytes from 327680 bytes)
+RAM:   [==        ]  18.9% (used 61996 bytes from 327680 bytes)
 
-Flash: [========= ]  89.9% (used 1177925 bytes from 1310720 bytes)
+Flash: [========= ]  89.6% (used 1761701 bytes from 1966080 bytes)
 
-Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit https://github.com/arduino-libraries/ArduinoBLE/pull/53/commits/ae4891dc4bfe19903201e94b93b8b24e288e7fa1 to fix manufacturerData() function. I'm sure it's just on my end, but I couldn't make it work with the default ArduinoBLE library.
-
-Tried using Bluedroid (BLEdevice) library but it was too heavy for my CP2102 CH9102F D1 Mini ESP32.
-
-Also tried using NimBLE library, but it seems like the Arduino library is no longer compatible with some MCU's unless using ESP-IDF.
-
-We could have technically removed the OTA function, the ESP32's OTA partition, and doubled the size of the available program size... but I have 3 of these ESP32 around the house and I really like the OTA function. 
-An alternative is reducing the SPIFFS partition while leaving OTA intact with "board_build.partitions = min_spiffs.csv" in platformio.ini resulting on a Flash usage of 59.9% instead of 89.9%
+Reduced the SPIFFS partition while leaving OTA intact with "board_build.partitions = min_spiffs.csv" in platformio.ini to fit WiFi + Bluetooth Classic + BLE functionality

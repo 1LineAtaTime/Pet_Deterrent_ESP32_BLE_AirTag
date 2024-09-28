@@ -3,12 +3,10 @@
 #include <Arduino.h>
 #include <credentials.h>
 
-// Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit
 #include "BluetoothSerial.h"
 #include <BLEAdvertisedDevice.h>
 #include <BLEDevice.h>
 #include <BLEScan.h>
-
 
 #include "OTA/SemVer.h"
 #include <WiFi.h>
