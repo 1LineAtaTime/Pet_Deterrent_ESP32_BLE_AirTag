@@ -4,7 +4,11 @@
 #include <credentials.h>
 
 // Modified latest ArduinoBLE library (@ 1.3.7) with makisin's commit
-#include "ArduinoBLE.h"
+#include "BluetoothSerial.h"
+#include <BLEAdvertisedDevice.h>
+#include <BLEDevice.h>
+#include <BLEScan.h>
+
 
 #include "OTA/SemVer.h"
 #include <WiFi.h>
@@ -12,6 +16,24 @@
 #include "SinricProContactsensor.h"
 #include "OTA/ESP32OTAHelper.h"
 #include "Health/HealthDiagnostics.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+BluetoothSerial SerialBT;
+
+
+#define BT_DISCOVER_TIME	10000
+
+
+static bool btScanAsync = true;
+static bool btScanSync = true;
+
 
 #define LED 2
 #define BUZZER 21
@@ -131,41 +153,41 @@ void setupSinricPro() {
     Serial.printf("[Sinric Pro]: Connecting\r\n");
 }
 
-void scanBLEDevices() {
-    unsigned long actualMillis = millis();
+// void scanBLEDevices() {
+//     unsigned long actualMillis = millis();
 
-    // Start scanning for BLE devices
-    int scanDuration = 500;  // 500ms seconds scanning period
+//     // Start scanning for BLE devices
+//     int scanDuration = 500;  // 500ms seconds scanning period
     
-    BLEDevice foundDevice;
-    if (BLE.scan(scanDuration)) {
-        // Loop through the discovered devices
-        while (foundDevice = BLE.available()) {
-            if ((foundDevice.manufacturerData().startsWith("4c00121910")) && (foundDevice.manufacturerData().length() == 58)){
-                if (foundDevice.rssi() >= CUTOFF) {
-                    Serial.printf("[BLE]: Found AirTag nearby! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
-                    Serial.print(foundDevice.manufacturerData()); Serial.print("\r\n");
+//     BLEDevice foundDevice;
+//     if (BLE.scan(scanDuration)) {
+//         // Loop through the discovered devices
+//         while (foundDevice = BLE.available()) {
+//             if ((foundDevice.manufacturerData().startsWith("4c00121910")) && (foundDevice.manufacturerData().length() == 58)){
+//                 if (foundDevice.rssi() >= CUTOFF) {
+//                     Serial.printf("[BLE]: Found AirTag nearby! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
+//                     Serial.print(foundDevice.manufacturerData()); Serial.print("\r\n");
 
-                    tagFound = millis();
-                    digitalWrite(LED, HIGH);
-                    return;
-                }
-                else {
-                    Serial.printf("[BLE]: Found AirTag! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
-                    Serial.print(foundDevice.manufacturerData()); Serial.print("\r\n");
-                }
-            }
-        }
-        if (actualMillis - tagFound >= debounceTime) {
-            digitalWrite(LED, LOW);
-        }
-    } else {
-        Serial.println("[BLE]: No BLE devices found\r\n");
-        if (actualMillis - tagFound >= debounceTime) {
-            digitalWrite(LED, LOW);
-        }
-    }
-}
+//                     tagFound = millis();
+//                     digitalWrite(LED, HIGH);
+//                     return;
+//                 }
+//                 else {
+//                     Serial.printf("[BLE]: Found AirTag! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
+//                     Serial.print(foundDevice.manufacturerData()); Serial.print("\r\n");
+//                 }
+//             }
+//         }
+//         if (actualMillis - tagFound >= debounceTime) {
+//             digitalWrite(LED, LOW);
+//         }
+//     } else {
+//         Serial.println("[BLE]: No BLE devices found\r\n");
+//         if (actualMillis - tagFound >= debounceTime) {
+//             digitalWrite(LED, LOW);
+//         }
+//     }
+// }
 
 void setup() {
     Serial.begin(BAUD_RATE);
@@ -179,19 +201,21 @@ void setup() {
     setupSinricPro();
 
     delay(2000);
-    if (!BLE.begin()){
-        Serial.println("[BLE]: Couldn't start\r\n");
-    }
-    else {
-        Serial.println("[BLE]: Started\r\n");
-    }
+    BLEDevice::init("");
+    SerialBT.begin("ESP32test");  //Bluetooth device name
+    // if (!BLE.begin()){
+    //     Serial.println("[BLE]: Couldn't start\r\n");
+    // }
+    // else {
+    //     Serial.println("[BLE]: Started\r\n");
+    // }
 }
 
 void loop() {
     unsigned long actualMillis = millis();
 
     // Keep scanning for BLE devices
-    scanBLEDevices();
+    // scanBLEDevices();
     
     delay(100);
 
