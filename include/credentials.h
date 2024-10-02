@@ -1,5 +1,5 @@
 
-// #define LOCATION_ROOM // uncomment this line if location is room instead of plants
+// #define LOCATION_ROOM true // uncomment this line if location is room instead of plants
 
 #define WIFI_SSID           "your WiFi name"
 #define WIFI_PASS           "your password"
