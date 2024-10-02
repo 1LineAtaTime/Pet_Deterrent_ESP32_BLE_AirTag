@@ -19,7 +19,7 @@
 
 #ifndef LOCATION_ROOM
     // Sensor for Plants
-   const int CUTOFF = -39;
+   const int CUTOFF = -41;
 #else 
     //  Sensor for Room
     const int CUTOFF = -65;
@@ -66,10 +66,31 @@ bool handleOTAUpdate(const String& url, int major, int minor, int patch, bool fo
   }
 }
 
+// setup function for SinricPro
+void setupSinricPro() {
+    // add device to SinricPro
+    SinricProContactsensor& myContact = SinricPro[CONTACT_ID];
+
+    // setup SinricPro
+    SinricPro.onConnected([](){ Serial.printf("[Sinric Pro]: Connected\r\n"); });
+    SinricPro.onDisconnected([](){ Serial.printf("[Sinric Pro]: Disconnected\r\n"); });
+    SinricPro.onOTAUpdate(handleOTAUpdate);
+    SinricPro.onReportHealth([&](String &healthReport) {
+        return healthDiagnostics.reportHealth(healthReport);
+    });  
+    SinricPro.begin(APP_KEY, APP_SECRET);
+    
+    Serial.printf("[Sinric Pro]: Connecting\r\n");
+}
+
 void handleContactsensor() {
     if (SinricPro.isConnected() == false) {
         Serial.printf("[Sinric Pro]: Not connected...!\r\n");
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
         startUp = true; // we reset the startUp bool in case we get disconnected. Sometimes the contact sensor on SinricPro shows up as Closed even though it is not
+        setupSinricPro();
         return;
     }
 
@@ -112,23 +133,6 @@ void setupWiFi() {
     }
     IPAddress localIP = WiFi.localIP();
     Serial.printf("connected!\r\n[WiFi]: IP-Address is %d.%d.%d.%d\r\n", localIP[0], localIP[1], localIP[2], localIP[3]);
-}
-
-// setup function for SinricPro
-void setupSinricPro() {
-    // add device to SinricPro
-    SinricProContactsensor& myContact = SinricPro[CONTACT_ID];
-
-    // setup SinricPro
-    SinricPro.onConnected([](){ Serial.printf("[Sinric Pro]: Connected\r\n"); });
-    SinricPro.onDisconnected([](){ Serial.printf("[Sinric Pro]: Disconnected\r\n"); });
-    SinricPro.onOTAUpdate(handleOTAUpdate);
-    SinricPro.onReportHealth([&](String &healthReport) {
-        return healthDiagnostics.reportHealth(healthReport);
-    });  
-    SinricPro.begin(APP_KEY, APP_SECRET);
-    
-    Serial.printf("[Sinric Pro]: Connecting\r\n");
 }
 
 void scanBLEDevices() {
