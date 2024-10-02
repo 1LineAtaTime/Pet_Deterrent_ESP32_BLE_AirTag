@@ -1,4 +1,4 @@
-#define FIRMWARE_VERSION "1.0.4"
+#define FIRMWARE_VERSION "1.0.6"
 
 #include <Arduino.h>
 #include <credentials.h>
@@ -19,7 +19,7 @@
 
 #ifndef LOCATION_ROOM
     // Sensor for Plants
-   const int CUTOFF = -41;
+   const int CUTOFF = -52;
 #else 
     //  Sensor for Room
     const int CUTOFF = -65;
@@ -178,7 +178,7 @@ void setup() {
     pinMode(LED, OUTPUT);
     pinMode(BUZZER, OUTPUT);
     digitalWrite(BUZZER, HIGH);
-    delay(50);
+    delay(10);
     digitalWrite(BUZZER, LOW);
     
     setupWiFi();
