@@ -1,4 +1,4 @@
-#define FIRMWARE_VERSION "1.0.6"
+#define FIRMWARE_VERSION "1.0.7"
 
 #include <Arduino.h>
 #include <credentials.h>
@@ -17,12 +17,13 @@
 #define BUZZER 21
 #define BAUD_RATE 115200
 
-#ifndef LOCATION_ROOM
+#ifdef LOCATION_ROOM
+    //  Sensor for Room
+    const int CUTOFF = -68;
+#else 
     // Sensor for Plants
    const int CUTOFF = -52;
-#else 
-    //  Sensor for Room
-    const int CUTOFF = -65;
+   #define LOCATION_ROOM false
 #endif
     
 const int debounceTime = 10000;
@@ -149,10 +150,16 @@ void scanBLEDevices() {
                 if (foundDevice.rssi() >= CUTOFF) {
                     Serial.printf("[BLE]: Found AirTag nearby! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
                     Serial.print(foundDevice.manufacturerData()); Serial.print("\r\n");
-
-                    tagFound = millis();
-                    digitalWrite(LED, HIGH);
-                    return;
+                    
+                    if (!LOCATION_ROOM){
+                        tagFound = millis();
+                        digitalWrite(LED, HIGH);
+                        return;
+                    } else { // TO DO: keep checking for 15 more seconds just to make sure, then attempt to connect to phone and check if RSSI is >= threshold
+                        tagFound = millis();
+                        digitalWrite(LED, HIGH);
+                        return;
+                    }
                 }
                 else {
                     Serial.printf("[BLE]: Found AirTag! RSSI: %d, ManufacturerData: ", foundDevice.rssi());
@@ -203,7 +210,7 @@ void loop() {
     delay(100);
 
     // Beep only for ~2 seconds
-    if (digitalRead(LED) && (actualMillis - tagFound <= 2000)) {
+    if (!LOCATION_ROOM && digitalRead(LED) && (actualMillis - tagFound <= 2000)) {
         digitalWrite(BUZZER, HIGH);
         delay(200);
         digitalWrite(BUZZER, LOW);
