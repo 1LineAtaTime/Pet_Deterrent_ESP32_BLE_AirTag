@@ -177,6 +177,9 @@ void setup() {
     Serial.printf("\r\n[ESP32]: Started with Firmware Version: %s\r\n", FIRMWARE_VERSION);
     pinMode(LED, OUTPUT);
     pinMode(BUZZER, OUTPUT);
+    digitalWrite(BUZZER, HIGH);
+    delay(50);
+    digitalWrite(BUZZER, LOW);
     
     setupWiFi();
 
