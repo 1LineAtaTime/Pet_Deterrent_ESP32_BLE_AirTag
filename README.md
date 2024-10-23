@@ -1,6 +1,6 @@
-Please note there are 2 different branches in this repo: this one does not have Bluetooth Classic, the other one has BLE with Bluetooth Classic and WiFi but it is not fully operational yet.
+Please note there are 2 different branches in this repo: this one is standalone with "Sinric Pro" to integrate with Alexa and OTA. The other one uses ESPhome instead to integrate with Home Assistant, Alexa, OTA, monitoring, etc.
 
-Mini ESP32 with BLE scanning, WiFi, Alexa integration and OTA through Sinric Pro.
+Pet Deterrent by using a Mini ESP32 with BLE scanning, WiFi, Alexa integration and OTA through Sinric Pro.
 
 This program transforms an ESP32 into an AirTag detector (or any other BLE device) and pushes notifications to a dashboard on Sinric Pro, which manages the OTAs and the Alexa integration. 
 
