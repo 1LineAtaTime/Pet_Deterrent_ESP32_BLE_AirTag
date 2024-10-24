@@ -1,7 +1,24 @@
-Please note there are 2 different branches in this repo: this one uses ESPhome instead to integrate with Home Assistant, Alexa, OTA, monitoring, etc. The other one is standalone with "Sinric Pro" to integrate with Alexa and OTA.
+Please note there are 2 different branches in this repo: this one uses ESPhome and Alexa_Media_Player instead to integrate with Home Assistant, Alexa, OTA, monitoring, etc. The other one is standalone with "Sinric Pro" to integrate with Alexa and OTA.
 
-Pet Deterrent by using a Mini ESP32 with BLE scanning, WiFi, Alexa integration and OTA through ESPHome and Home Assistant.
+Pet Deterrent by using a Mini ESP32 with BLE scanning, WiFi, Alexa integration and OTA through ESPHome, Home Assistant and Alexa_Media_Player.
 
+Make sure to create a secrets.yaml file in the same folder as the .yaml file you are trying to compile with the contents shown below:
+# Your Wi-Fi SSID and password
+wifi_ssid: "your wifi ssid"
+wifi_password: "your password"
+
+ota_password: "whatever ota password you put in home assistant and your installation of ESPHome"
+api_password: "whatever api password you put in home assistant and your installation of ESPHome"
+
+Alexa_Media_Player (found in Archives if needed):
+https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip
+
+To install ESPHome compiler:
+> pip3 install wheel
+> pip3 install esphome
+
+To compile and upload ESPHome yaml file:
+> esphome run ESP32-bedroom\esp32-bedroom.yaml --device COM3
 
 -------------------- Need to update overall code and folders, branch names, bytes and % usage from below, etc. ----------------------
 

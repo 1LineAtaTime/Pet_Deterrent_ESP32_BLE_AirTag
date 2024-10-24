@@ -1,0 +1,443 @@
+# credits for initial template to https://github.com/homeautomatorza/esphome/blob/main/Lets_build_a_room_sensor/Part%200/code.yaml
+# credits for part of the BLE section to https://github.com/dalehumby/ESPHome-Apple-Watch-detection
+# credits for ESP32 internal sensor data to https://github.com/SeByDocKy/pvbrain2/
+################################################################################
+# Substitution Variables
+################################################################################
+substitutions:
+  location: bedroom
+  device_internal_name: esp32${location}
+  device_wifi_name: esp32_${location}_wifi
+  device_friendly_name: ESP32 ${location}
+  device_sampling_time: 60s
+  phone_uuid: "0x004C.02.15.94.A9.85.1C.06.5E.4B.19.AC.DB.DF.68.AA.8F.69.3D.00.64.9C.44.C5" #advertised name in BLE from Home Assistant App
+  phone_uuid_length: (23)
+  airtag_uuid: "0x004C.12.19.10" # Begining of Manufacturer Code for AirTags
+  airtag_uuid_length: (27)
+  buzzer_pin: GPIO21
+  led_pin: GPIO2
+
+################################################################################
+# Globals
+################################################################################
+globals: ##to set
+ default reboot behavior
+  - id: wifi_connection
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+  - id: rssi_threshold_value
+    type: float
+    initial_value: '-30.0'
+
+################################################################################
+# Board Configuration
+################################################################################
+esphome:
+  name: ${device_internal_name}
+  friendly_name: ${device_friendly_name}
+  platformio_options:
+    build_flags: 
+      - -Wno-maybe-uninitialized
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf # 70% Flash usage vs 90% with arduino... may need to do a clean compilation (delete .esphome folder)
+
+################################################################################
+# Enable logging
+################################################################################
+logger:
+
+################################################################################
+# Enable debugging features
+################################################################################
+debug:
+  update_interval: ${device_sampling_time}
+
+################################################################################
+# Enable Home Assistant API
+################################################################################
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret api_password
+
+################################################################################
+# OTA
+################################################################################
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+################################################################################
+# WiFi
+################################################################################
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+      
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${device_wifi_name}
+    password: !secret wifi_password
+
+captive_portal:
+
+################################################################################
+# Web Server
+################################################################################
+web_server:
+  port: 80
+  version: 2
+  include_internal: true
+  local: true
+
+################################################################################
+# Status led --> ignore strapping pin issue?
+################################################################################
+status_led:
+  pin:
+    number: ${led_pin}
+    inverted: false
+
+################################################################################
+# Time
+################################################################################
+time:
+  - platform: homeassistant
+
+################################################################################
+# Binary Sensors
+################################################################################
+binary_sensor:
+  # ESP Status
+  - platform: status
+    name: "Status"
+    id: ${device_internal_name}_status
+
+  - platform: template
+    id: room_presence
+    name: "$location presence"
+    device_class: occupancy
+    lambda: |-
+      if (id(room_presence_debounce).state > 0.99) {
+        return true;
+      } else if (id(room_presence_debounce).state < 0.01) {
+        return false;
+      } else {
+        return id(room_presence).state;
+      }
+
+################################################################################
+# Sensors
+################################################################################
+sensor:
+  #-------------------------------------------------------------------------------
+  # ESP32 internal sensors
+  #-------------------------------------------------------------------------------
+  # Temperature
+  - platform: internal_temperature
+    name: Internal Temperature
+    update_interval: ${device_sampling_time}
+
+  - platform: debug
+    free:
+      name: Heap free
+      id: ${device_internal_name}_heap_free
+    block:
+      name: Heap max block
+      id: ${device_internal_name}_heap_max_block
+    loop_time:
+      name: Loop time
+      id: ${device_internal_name}_loop_time
+
+  - platform: template
+    name: Heap free (%)
+    id: ${device_internal_name}_heap_free_percent
+    unit_of_measurement: '%'
+    accuracy_decimals: 2
+    icon: mdi:percent
+    update_interval: ${device_sampling_time}
+    entity_category: diagnostic
+    # 524288 B (SRAM total)
+    # 327680 B (DRAM usable)
+    lambda: return ( id(${device_internal_name}_heap_free).state * 100 / 327680 );
+
+  - platform: template
+    name: Heap max block (%)
+    id: ${device_internal_name}_heap_max_block_percent
+    unit_of_measurement: '%'
+    accuracy_decimals: 2
+    icon: mdi:percent
+    update_interval: ${device_sampling_time}
+    entity_category: diagnostic
+    # 524288 B (SRAM total)
+    # 327680 B (DRAM usable)
+    lambda: return ( id(${device_internal_name}_heap_max_block).state * 100 / 327680 );
+
+  - platform: template
+    name: "ESP Flash Usage"
+    id: ${device_internal_name}_flash_usage
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: ${device_sampling_time}
+    icon: mdi:percent
+    entity_category: diagnostic
+    lambda: |-
+      // Get the partition where the app (sketch) is stored
+      const esp_partition_t *running_partition = esp_ota_get_running_partition();
+
+      // Total size of the partition (where the sketch is stored)
+      size_t total_sketch_space = running_partition->size;
+
+      // Get the size of the currently running sketch (firmware)
+      // Using an estimate here since direct function isn't available, hence the 0.874 multiplier
+      size_t used_sketch_space = total_sketch_space - (esp_get_free_heap_size() * sizeof(void*));
+
+      // Calculate percentage of used space
+      float sketch_flash_usage_percentage = (used_sketch_space * 0.874 * 100.0) / total_sketch_space;
+
+      // Log flash usage details for debugging Used flash for sketch: 1533200 bytes, Total sketch space: 1835008 bytes
+      ESP_LOGD("flash_usage", "Used flash for sketch: %u bytes, Total sketch space: %u bytes", used_sketch_space, total_sketch_space);
+
+      return sketch_flash_usage_percentage;
+
+  #-------------------------------------------------------------------------------
+  # ESP Generic Sensors
+  #-------------------------------------------------------------------------------
+  # WiFi
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    id: ${device_internal_name}_wifi_signal_sensor
+    update_interval: ${device_sampling_time}
+
+  # Uptime
+  - platform: uptime
+    name: "Uptime Sensor"
+    id: ${device_internal_name}_uptime_sensor
+    update_interval: ${device_sampling_time}
+    internal: true
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: ${device_internal_name}_uptime_human
+            state: !lambda |-
+              int seconds = round(id(${device_internal_name}_uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+  #-------------------------------------------------------------------------------
+  # Custom Sensors
+  #-------------------------------------------------------------------------------
+  - platform: template
+    id: ${device_internal_name}_airtag_rssi
+    name: "AirTag $location RSSI"
+    icon: mdi:bluetooth-audio
+    device_class: signal_strength
+    unit_of_measurement: dBm
+    accuracy_decimals: 0
+    filters:
+      - exponential_moving_average:
+          alpha: 0.3
+          send_every: 1
+    on_value:
+      then:
+        - lambda: |-
+            if (id(${device_internal_name}_airtag_rssi).state > id(rssi_threshold_value)) {
+              id(room_presence_debounce).publish_state(1);
+            } else {
+              id(room_presence_debounce).publish_state(0);
+            }
+        - script.execute: presence_timeout  # Publish 0 if no rssi received
+  
+  - platform: template
+    id: ${device_internal_name}_phone_rssi
+    name: "Phone $location RSSI"
+    icon: mdi:bluetooth-audio
+    device_class: signal_strength
+    unit_of_measurement: dBm
+    accuracy_decimals: 0
+    filters:
+      - exponential_moving_average:
+          alpha: 0.3
+          send_every: 1
+    on_value:
+      then:
+        - lambda: |-
+            if (id(${device_internal_name}_phone_rssi).state > id(rssi_threshold_value)) {
+              id(room_presence_debounce).publish_state(1);
+            } else {
+              id(room_presence_debounce).publish_state(0);
+            }
+        - script.execute: presence_timeout  # Publish 0 if no rssi received
+  
+  - platform: template
+    id: room_presence_debounce
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1
+
+  - platform: homeassistant
+    name: ${location} HA RSSI Present Value
+    entity_id: input_number.${location}_rssi_present
+    id: ha_rssi_threshold
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            id(rssi_threshold_value) = id(ha_rssi_threshold).state;
+            ESP_LOGI("ble_adv", "RSSI Threshold updated from HA: %.1f dBm", id(rssi_threshold_value));
+    
+################################################################################
+# Text Sensors
+################################################################################
+text_sensor:
+  #-------------------------------------------------------------------------------
+  # ESP32 internal sensors
+  #-------------------------------------------------------------------------------
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      id: ${device_internal_name}_ip_address
+    ssid:
+      name: Connected SSID
+      id: ${device_internal_name}_connected_ssid
+    mac_address:
+      name: Mac Wifi Address
+      id: ${device_internal_name}_mac_address
+
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
+
+  #-------------------------------------------------------------------------------
+  # Custom Text sensors
+  #-------------------------------------------------------------------------------
+  - platform: template
+    name: Uptime Human Readable
+    id: ${device_internal_name}_uptime_human
+    icon: mdi:clock-start
+
+################################################################################
+# Switch
+################################################################################
+switch:  
+  - platform: gpio
+    name: "Buzzer"
+    pin: ${buzzer_pin}
+    id: ${device_internal_name}_buzzer
+    icon: mdi:alarm-light
+
+  - platform: restart
+    name: "Restart"
+    id: device_restart
+  
+  - platform: safe_mode
+    name: Use Safe Mode
+    id: device_safe_mode
+
+################################################################################
+# Interval
+################################################################################
+interval:
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - lambda: |-
+                id(wifi_connection) = true;
+          else:
+            - lambda: |-
+                id(wifi_connection) = false;
+
+################################################################################
+# Scripts
+################################################################################
+script:
+  # Publish event every 30 seconds when no rssi received
+  id: presence_timeout
+  mode: restart
+  then:
+    - delay: 30s
+    - lambda: |-
+        id(room_presence_debounce).publish_state(0);
+        id(${device_internal_name}_phone_rssi).publish_state(-120);
+        id(${device_internal_name}_airtag_rssi).publish_state(-120);
+    - script.execute: presence_timeout
+
+################################################################################
+# Enable ESP32 BLE tracker
+################################################################################
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1.2s
+    window: 500ms
+    active: false
+  on_ble_advertise:
+    - then:
+      # Look for manufacturer data of form: 4c00 10 05 YY 98 XXXXXX
+      # Where YY can be 01..0F or 20..2F; and XXXXXX is ignored
+      - lambda: |-
+          auto normalize_string = [](std::string str) -> std::string {
+            str.erase(std::remove(str.begin(), str.end(), '.'), str.end());  // Remove dots
+            if (str.find("0x") == 0) str = str.substr(2);  // Remove "0x" prefix if it exists
+            std::transform(str.begin(), str.end(), str.begin(), ::tolower);  // Convert to lowercase
+            return str;
+          };
+
+          optional<int16_t> airtag_best_rssi = nullopt;
+          optional<int16_t> phone_best_rssi = nullopt;
+          const int16_t rssi = x.get_rssi();
+          std::string manuf_data = "";
+          std::string phone_uuid = normalize_string("${phone_uuid}");
+          std::string airtag_uuid = normalize_string("${airtag_uuid}");
+
+          if (rssi > id(rssi_threshold_value)) {
+            for (auto data : x.get_manufacturer_datas()) {
+              // Concatenate using std::string
+              manuf_data = data.uuid.to_string() + '.' + format_hex_pretty(data.data);
+            }
+            // Log the concatenated result, converting to const char* using .c_str()
+            ESP_LOGI("ble_adv", "Advertised manufacturer data: %s", manuf_data.c_str());
+            
+            // Normalize the manuf_data string
+            std::string normalized_manuf_data = normalize_string(manuf_data);
+
+            // If phone found..
+            if ((normalized_manuf_data.find(phone_uuid) != std::string::npos) && (manuf_data.find("${phone_uuid_length}") != std::string::npos)) {
+              phone_best_rssi = max(rssi, phone_best_rssi.value_or(rssi));
+              ESP_LOGD("ble_adv", "Found Phone rssi %i", rssi);
+
+              if (phone_best_rssi) {
+                id(${device_internal_name}_phone_rssi).publish_state(*phone_best_rssi);
+              }
+            }
+            // If AirTag found... 
+            else if ((normalized_manuf_data.find(airtag_uuid) != std::string::npos) && (manuf_data.find("${airtag_uuid_length}") != std::string::npos)) {
+              airtag_best_rssi = max(rssi, airtag_best_rssi.value_or(rssi));
+              ESP_LOGD("ble_adv", "Found airtag rssi %i", rssi);
+
+              if (airtag_best_rssi) {
+                id(${device_internal_name}_airtag_rssi).publish_state(*airtag_best_rssi);
+              }
+            }
+          }
+
