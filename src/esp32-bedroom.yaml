@@ -10,7 +10,7 @@ substitutions:
   device_wifi_name: esp32_${location}_wifi
   device_friendly_name: ESP32 ${location}
   device_sampling_time: 60s
-  phone_uuid: "0x004C.02.15.94.A9.85.1C.06.5E.4B.19.AC.DB.DF.68.AA.8F.69.3D.00.64.9C.44.C5" #advertised name in BLE from Home Assistant App
+  phone_uuid: "0x004C.02.15.94.A9.85.1C.06.5E.4B.19l.AC.DB.DF.68.AA.8F.69.3D.00.64.9C.44.C5" #advertised name in BLE from Home Assistant App
   phone_uuid_length: (23)
   airtag_uuid: "0x004C.12.19.10" # Begining of Manufacturer Code for AirTags
   airtag_uuid_length: (27)
@@ -20,8 +20,7 @@ substitutions:
 ################################################################################
 # Globals
 ################################################################################
-globals: ##to set
- default reboot behavior
+globals: 
   - id: wifi_connection
     type: bool
     restore_value: no
@@ -99,10 +98,10 @@ web_server:
 ################################################################################
 # Status led --> ignore strapping pin issue?
 ################################################################################
-status_led:
-  pin:
-    number: ${led_pin}
-    inverted: false
+# status_led:
+#   pin:
+#     number: ${led_pin}
+#     inverted: false
 
 ################################################################################
 # Time
@@ -125,8 +124,10 @@ binary_sensor:
     device_class: occupancy
     lambda: |-
       if (id(room_presence_debounce).state > 0.99) {
+        // id(${device_internal_name}_status_led).publish_state(1);
         return true;
       } else if (id(room_presence_debounce).state < 0.01) {
+        // id(${device_internal_name}_status_led).publish_state(0);
         return false;
       } else {
         return id(room_presence).state;
@@ -195,11 +196,11 @@ sensor:
       size_t total_sketch_space = running_partition->size;
 
       // Get the size of the currently running sketch (firmware)
-      // Using an estimate here since direct function isn't available, hence the 0.874 multiplier
+      // Using an estimate here since direct function isn't available, hence the 0.874 multiplier below
       size_t used_sketch_space = total_sketch_space - (esp_get_free_heap_size() * sizeof(void*));
 
       // Calculate percentage of used space
-      float sketch_flash_usage_percentage = (used_sketch_space * 0.874 * 100.0) / total_sketch_space;
+      float sketch_flash_usage_percentage = (used_sketch_space * 0.877 * 100.0) / total_sketch_space;
 
       // Log flash usage details for debugging Used flash for sketch: 1533200 bytes, Total sketch space: 1835008 bytes
       ESP_LOGD("flash_usage", "Used flash for sketch: %u bytes, Total sketch space: %u bytes", used_sketch_space, total_sketch_space);
@@ -342,6 +343,10 @@ switch:
     pin: ${buzzer_pin}
     id: ${device_internal_name}_buzzer
     icon: mdi:alarm-light
+    on_turn_on:
+      - light.turn_on: ${device_internal_name}_status_led
+    on_turn_off:
+      - light.turn_off: ${device_internal_name}_status_led
 
   - platform: restart
     name: "Restart"
@@ -350,6 +355,15 @@ switch:
   - platform: safe_mode
     name: Use Safe Mode
     id: device_safe_mode
+
+################################################################################
+# Light
+################################################################################
+light:
+  - platform: status_led
+    # name: "Status LED" # removed so it doesn't show up in Home Assistant
+    pin: ${led_pin}
+    id: ${device_internal_name}_status_led
 
 ################################################################################
 # Interval
@@ -393,9 +407,8 @@ esp32_ble_tracker:
     active: false
   on_ble_advertise:
     - then:
-      # Look for manufacturer data of form: 4c00 10 05 YY 98 XXXXXX
-      # Where YY can be 01..0F or 20..2F; and XXXXXX is ignored
       - lambda: |-
+          // Function to clean up the manufacturer data
           auto normalize_string = [](std::string str) -> std::string {
             str.erase(std::remove(str.begin(), str.end(), '.'), str.end());  // Remove dots
             if (str.find("0x") == 0) str = str.substr(2);  // Remove "0x" prefix if it exists
@@ -403,6 +416,7 @@ esp32_ble_tracker:
             return str;
           };
 
+          // set up and clean variables
           optional<int16_t> airtag_best_rssi = nullopt;
           optional<int16_t> phone_best_rssi = nullopt;
           const int16_t rssi = x.get_rssi();
@@ -412,7 +426,6 @@ esp32_ble_tracker:
 
           if (rssi > id(rssi_threshold_value)) {
             for (auto data : x.get_manufacturer_datas()) {
-              // Concatenate using std::string
               manuf_data = data.uuid.to_string() + '.' + format_hex_pretty(data.data);
             }
             // Log the concatenated result, converting to const char* using .c_str()

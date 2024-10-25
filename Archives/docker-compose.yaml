@@ -1,0 +1,53 @@
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    restart: always
+    stdin_open: true
+    tty: true
+    ports:
+      - "9000:9000/tcp"
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/admin/opt/portainer:/data
+
+  homeassistant:  
+    container_name: homeassistant  
+    image: "ghcr.io/home-assistant/home-assistant:stable"  
+    volumes:  
+      - /home/admin/homeassistant/config:/config  
+      - /etc/localtime:/etc/localtime:ro  
+      - /var/run/dbus:/var/run/dbus
+    restart: unless-stopped
+    privileged: true  
+    network_mode: host
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0:rwm
+      - /dev/ttyUSB1:/dev/ttyUSB1:rwm
+      - /dev/hci0:/dev/hci0
+    cap_add:
+      - NET_BIND_SERVICE
+
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome #:latest
+    volumes:
+      - /home/admin/esphome/config:/config:rw
+      - /etc/localtime:/etc/localtime:ro
+    network_mode: host
+    restart: unless-stopped
+
+  # glances:
+  #   container_name: glances
+  #   image: nicolargo/glances:4.1.2.1-full
+  #   ports:
+  #     - 7300:61208
+  #   environment:
+  #     - TZ=America/New_York
+  #     - GLANCES_OPT=-w # run as a web server
+  #   pid: host
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro # Docker socket for monitoring
