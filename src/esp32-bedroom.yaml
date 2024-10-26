@@ -5,17 +5,18 @@
 # Substitution Variables
 ################################################################################
 substitutions:
-  location: bedroom
+  location: bedroom # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
   device_friendly_name: ESP32 ${location}
   device_sampling_time: 60s
-  phone_uuid: "0x004C.02.15.94.A9.85.1C.06.5E.4B.19l.AC.DB.DF.68.AA.8F.69.3D.00.64.9C.44.C5" #advertised name in BLE from Home Assistant App
+  phone_uuid: "0x004C.02.15.94.A9.85.1C.06.5E.4B.19.AC.DB.DF.68.AA.8F.69.3D.00.64.9C.44.C5" #advertised name in BLE from Home Assistant App
   phone_uuid_length: (23)
   airtag_uuid: "0x004C.12.19.10" # Begining of Manufacturer Code for AirTags
   airtag_uuid_length: (27)
   buzzer_pin: GPIO21
   led_pin: GPIO2
+  rssi_scan_min: '-65' # minimum rssi value so things show up with their respective values in Home Assistant. Do we even need this?
 
 ################################################################################
 # Globals
@@ -28,7 +29,15 @@ globals:
 
   - id: rssi_threshold_value
     type: float
-    initial_value: '-30.0'
+    initial_value: '-26.0'
+
+  - id: airtag_max_rssi_scanned
+    type: int
+    initial_value: '-120'
+
+  - id: phone_max_rssi_scanned
+    type: int
+    initial_value: '-120'
 
 ################################################################################
 # Board Configuration
@@ -43,7 +52,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    type: esp-idf # 70% Flash usage vs 90% with arduino... may need to do a clean compilation (delete .esphome folder)
+    type: esp-idf # 70% Flash usage vs 90% with arduino
 
 ################################################################################
 # Enable logging
@@ -96,7 +105,7 @@ web_server:
   local: true
 
 ################################################################################
-# Status led --> ignore strapping pin issue?
+# Status led --> No need to add, because it is also linked as a binary_sensor
 ################################################################################
 # status_led:
 #   pin:
@@ -123,11 +132,20 @@ binary_sensor:
     name: "$location presence"
     device_class: occupancy
     lambda: |-
-      if (id(room_presence_debounce).state > 0.99) {
-        // id(${device_internal_name}_status_led).publish_state(1);
-        return true;
+      std::string phone_uuid = "${phone_uuid}";
+      std::string location = "${location}";
+
+      if (id(room_presence_debounce).state > 0.99) { //need to change the debounce so it's more snappy?
+        if ((id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_phone_rssi).state >= id(rssi_threshold_value)) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
+          id(trigger_buzzer).execute();
+          return true;
+        } else if (!(id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
+          id(trigger_buzzer).execute();
+          return true;
+        } else {
+          return false;
+        }
       } else if (id(room_presence_debounce).state < 0.01) {
-        // id(${device_internal_name}_status_led).publish_state(0);
         return false;
       } else {
         return id(room_presence).state;
@@ -196,11 +214,11 @@ sensor:
       size_t total_sketch_space = running_partition->size;
 
       // Get the size of the currently running sketch (firmware)
-      // Using an estimate here since direct function isn't available, hence the 0.874 multiplier below
+      // Using an estimate here since direct function isn't available, hence the 0.888 multiplier below
       size_t used_sketch_space = total_sketch_space - (esp_get_free_heap_size() * sizeof(void*));
 
       // Calculate percentage of used space
-      float sketch_flash_usage_percentage = (used_sketch_space * 0.877 * 100.0) / total_sketch_space;
+      float sketch_flash_usage_percentage = (used_sketch_space * 0.888 * 100.0) / total_sketch_space;
 
       // Log flash usage details for debugging Used flash for sketch: 1533200 bytes, Total sketch space: 1835008 bytes
       ESP_LOGD("flash_usage", "Used flash for sketch: %u bytes, Total sketch space: %u bytes", used_sketch_space, total_sketch_space);
@@ -251,14 +269,14 @@ sensor:
     device_class: signal_strength
     unit_of_measurement: dBm
     accuracy_decimals: 0
-    filters:
-      - exponential_moving_average:
-          alpha: 0.3
-          send_every: 1
+    # filters:
+    #   - exponential_moving_average:
+    #       alpha: 0.3
+    #       send_every: 1
     on_value:
       then:
         - lambda: |-
-            if (id(${device_internal_name}_airtag_rssi).state > id(rssi_threshold_value)) {
+            if (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value)) {
               id(room_presence_debounce).publish_state(1);
             } else {
               id(room_presence_debounce).publish_state(0);
@@ -272,26 +290,26 @@ sensor:
     device_class: signal_strength
     unit_of_measurement: dBm
     accuracy_decimals: 0
-    filters:
-      - exponential_moving_average:
-          alpha: 0.3
-          send_every: 1
+    # filters:
+    #   - exponential_moving_average:
+    #       alpha: 0.3
+    #       send_every: 1
     on_value:
       then:
         - lambda: |-
-            if (id(${device_internal_name}_phone_rssi).state > id(rssi_threshold_value)) {
-              id(room_presence_debounce).publish_state(1);
-            } else {
-              id(room_presence_debounce).publish_state(0);
-            }
-        - script.execute: presence_timeout  # Publish 0 if no rssi received
+            // if (id(${device_internal_name}_phone_rssi).state >= id(rssi_threshold_value)) {
+            //   id(room_presence_debounce).publish_state(1);
+            // } else {
+            //   id(room_presence_debounce).publish_state(0);
+            // }
+        # - script.execute: presence_timeout  # Publish 0 if no rssi received
   
   - platform: template
     id: room_presence_debounce
-    filters:
-      - sliding_window_moving_average:
-          window_size: 3
-          send_every: 1
+    # filters:
+    #   - sliding_window_moving_average:
+    #       window_size: 3
+    #       send_every: 1
 
   - platform: homeassistant
     name: ${location} HA RSSI Present Value
@@ -348,6 +366,11 @@ switch:
     on_turn_off:
       - light.turn_off: ${device_internal_name}_status_led
 
+  - platform: template
+    name: "Check Phone"
+    id: ${device_internal_name}_check_phone
+    optimistic: true
+
   - platform: restart
     name: "Restart"
     id: device_restart
@@ -386,25 +409,43 @@ interval:
 ################################################################################
 script:
   # Publish event every 30 seconds when no rssi received
-  id: presence_timeout
-  mode: restart
-  then:
-    - delay: 30s
-    - lambda: |-
-        id(room_presence_debounce).publish_state(0);
-        id(${device_internal_name}_phone_rssi).publish_state(-120);
-        id(${device_internal_name}_airtag_rssi).publish_state(-120);
-    - script.execute: presence_timeout
+  - id: presence_timeout
+    mode: restart
+    then:
+      - delay: 10s
+      - lambda: |-
+          id(room_presence_debounce).publish_state(0);
+          // id(${device_internal_name}_phone_rssi).publish_state(-120);
+          // id(${device_internal_name}_airtag_rssi).publish_state(-120);
+      - script.execute: presence_timeout
+    
+  # Trigger Function 
+  - id: trigger_buzzer
+    mode: single
+    then:
+      - logger.log: "Running Buzzer script"
+      # - switch.turn_on: ${device_internal_name}_buzzer
+      # - delay: 500ms
+      # - switch.turn_off: ${device_internal_name}_buzzer
+      # - delay: 250ms
+      # - switch.turn_on: ${device_internal_name}_buzzer
+      # - delay: 500ms
+      # - switch.turn_off: ${device_internal_name}_buzzer
+      # - delay: 250ms
+      # - switch.turn_on: ${device_internal_name}_buzzer
+      # - delay: 500ms
+      # - switch.turn_off: ${device_internal_name}_buzzer
+      - delay: 2s
 
 ################################################################################
 # Enable ESP32 BLE tracker
 ################################################################################
-
 esp32_ble_tracker:
   scan_parameters:
-    interval: 1.2s
-    window: 500ms
+    # interval: 2s
+    # window: 200ms
     active: false
+    duration: 4s
   on_ble_advertise:
     - then:
       - lambda: |-
@@ -424,12 +465,12 @@ esp32_ble_tracker:
           std::string phone_uuid = normalize_string("${phone_uuid}");
           std::string airtag_uuid = normalize_string("${airtag_uuid}");
 
-          if (rssi > id(rssi_threshold_value)) {
+          if (true) { //(rssi >= ${rssi_scan_min}) {// id(rssi_threshold_value)) {
             for (auto data : x.get_manufacturer_datas()) {
               manuf_data = data.uuid.to_string() + '.' + format_hex_pretty(data.data);
             }
             // Log the concatenated result, converting to const char* using .c_str()
-            ESP_LOGI("ble_adv", "Advertised manufacturer data: %s", manuf_data.c_str());
+            // ESP_LOGI("ble_adv", "Advertised manufacturer data: %s", manuf_data.c_str());
             
             // Normalize the manuf_data string
             std::string normalized_manuf_data = normalize_string(manuf_data);
@@ -437,20 +478,43 @@ esp32_ble_tracker:
             // If phone found..
             if ((normalized_manuf_data.find(phone_uuid) != std::string::npos) && (manuf_data.find("${phone_uuid_length}") != std::string::npos)) {
               phone_best_rssi = max(rssi, phone_best_rssi.value_or(rssi));
-              ESP_LOGD("ble_adv", "Found Phone rssi %i", rssi);
+              id(phone_max_rssi_scanned) = *phone_best_rssi;
 
-              if (phone_best_rssi) {
-                id(${device_internal_name}_phone_rssi).publish_state(*phone_best_rssi);
+              // If we are already below the Home Assistant threshold, don't wait for the scan to finish and just go and update the value
+              if (id(phone_max_rssi_scanned) >= id(rssi_threshold_value)) {
+                id(${device_internal_name}_phone_rssi).publish_state(id(phone_max_rssi_scanned));
               }
+              // ESP_LOGD("ble_adv", "Found Phone rssi %i", rssi);
+
+              // if (phone_best_rssi) {
+              //   id(${device_internal_name}_phone_rssi).publish_state(*phone_best_rssi);
+              // }
             }
             // If AirTag found... 
             else if ((normalized_manuf_data.find(airtag_uuid) != std::string::npos) && (manuf_data.find("${airtag_uuid_length}") != std::string::npos)) {
               airtag_best_rssi = max(rssi, airtag_best_rssi.value_or(rssi));
-              ESP_LOGD("ble_adv", "Found airtag rssi %i", rssi);
-
-              if (airtag_best_rssi) {
-                id(${device_internal_name}_airtag_rssi).publish_state(*airtag_best_rssi);
+              id(airtag_max_rssi_scanned) = *airtag_best_rssi;
+              
+              // If we are already below the Home Assistant threshold, don't wait for the scan to finish and just go and update the value
+              if (id(airtag_max_rssi_scanned) >= id(rssi_threshold_value)) {
+                id(${device_internal_name}_airtag_rssi).publish_state(id(airtag_max_rssi_scanned));
               }
+              // ESP_LOGD("ble_adv", "Found airtag rssi %i", rssi);
+
+              // if (airtag_best_rssi) {
+              //   id(${device_internal_name}_airtag_rssi).publish_state(*airtag_best_rssi);
+              // }
             }
           }
-
+  on_scan_end: 
+    - then:
+      - lambda: |- 
+          if (id(airtag_max_rssi_scanned)) {
+            // ESP_LOGD("ble_adv", "Found airtag rssi %i", id(airtag_max_rssi_scanned));
+            id(${device_internal_name}_airtag_rssi).publish_state(id(airtag_max_rssi_scanned));
+          }
+          if (id(phone_max_rssi_scanned)) {
+            // ESP_LOGD("ble_adv", "Found phone rssi %i", id(phone_max_rssi_scanned));
+            id(${device_internal_name}_phone_rssi).publish_state(id(phone_max_rssi_scanned));
+          }
+          

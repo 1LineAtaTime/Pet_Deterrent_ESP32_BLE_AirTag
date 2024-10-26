@@ -17,3 +17,11 @@ input_number:
     step: 1
     mode: box
     unit_of_measurement: dBm
+  
+  plants_rssi_present:
+    name: Plants RSSI min
+    min: -120
+    max: -20
+    step: 1
+    mode: box
+    unit_of_measurement: dBm

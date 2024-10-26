@@ -6,7 +6,9 @@ Pet Deterrent by using a Mini ESP32 with BLE scanning, WiFi, Alexa integration a
 
 This program transforms an ESP32 into an AirTag detector (or any other BLE device) and pushes notifications to a dashboard in Home Assistant, which manages the OTAs and the Alexa integration.
 
-There are a myriad of use cases for this device. I personally created it to know when my cats decide to start eating my plants or go into a room they are not supposed to be in. Both of my cats have an AirTag on their collar, in case one day they escape, so I can get an idea of what neighborhood they could be in. I then use that same air tags to detect if they are nearby. I have a spare iPhone I used to set them up on the Find My network, but then shut it off. The anti-stalker feature of the AirTag makes it advertise its presence every 2 seconds when they've been out of range of the parent phone for a while. Both the Address() and ManufacturerData() of the AirTag changes periodically, but we can extract the first few characters of the ManufacturerData() to identify it. More info on the Advertising Data can be found [here](https://adamcatley.com/AirTag.html)
+There are a myriad of use cases for this device. I personally created it to know when my cats decide to start eating my plants or go into a room they are not supposed to be in. Both of my cats have an AirTag on their collar, in case one day they escape, so I can get an idea of what neighborhood they could be in. I then use these same air tags to detect if they are nearby. I have a spare iPhone I used to set them up on the Find My network, but then shut it off. The anti-stalker feature of the AirTag makes it advertise its presence every 2 seconds when they've been out of range of the parent phone for a while. Both the Address() and ManufacturerData() of the AirTag changes periodically, but we can extract the first few characters of the ManufacturerData() to identify it. More info on the Advertising Data can be found [here](https://adamcatley.com/AirTag.html).
+> [!TIP]
+> The anti-stalker feature now also makes the AirTag beep every few hours. I just opened it up and removed the diaphragm that amplifies the sound. There are plenty of videos online on how to do it without breaking your AirTag. While this doesn't completely turn off the sound, it makes the sound not noticeable, which is kind of important if your pet is going to be carrying it all the time. The anti-stalker feature only activates if it doesn't detect your iPhone for X number of hours. I use Android, so my iPhone is stored in a box turned off.
 
 Other cases could be setting a trap door that only gets activated by a specific type of BLE device (e.g. backyard dog trap door), etc.
 
@@ -32,28 +34,54 @@ ota_password: "whatever ota password you put in home assistant and your installa
 api_password: "whatever api password you put in home assistant and your installation of ESPHome"
 ```
 
-2. Start by going to the [ESPHome website](https://web.esphome.io/?dashboard_wizard) and connect your board. Then select "Prepare for first use" so the board gets configured correctly. ![Screenshot of ESPHome Website](images/Capture10.PNG)
+2. Add the lines below in your [homeassistant/config/configuration.yaml](Archives/configuration.yaml). This will create an input text box in Home Assistant that ESP Home will use as the RSSI threshold value. You can then tweak the value to your desired threshold from the Home Assistant dashboard without having to restart anything. Changes will happen in the blink of an eye! You can either add one of these for each ESP32 location you have, or use the same for all of them.
+```
+input_number:
+  bedroom_rssi_present:
+    name: Bedroom RSSI min
+    min: -120
+    max: -20
+    step: 1
+    mode: box
+    unit_of_measurement: dBm
+  
+  plants_rssi_present:
+    name: Plants RSSI min
+    min: -120
+    max: -20
+    step: 1
+    mode: box
+    unit_of_measurement: dBm
+```
+![Screenshot of the Home Assistant dashboard with RSSI min threshold](images/Capture8.PNG)
 
-3. To install ESPHome compiler:
+3. Go to the [ESPHome website](https://web.esphome.io/?dashboard_wizard) and connect your board. Then select "Prepare for first use" so the board gets configured correctly. ![Screenshot of ESPHome Website](images/Capture10.PNG)
+
+4. To install ESPHome compiler locally in your computer:
 ```
 > pip3 install wheel
 > pip3 install esphome
 ```
 
-4. To compile and upload ESPHome yaml file (my port is COM3, but you can use a different one or even OTA):
+5. To compile and upload ESPHome yaml file (my port is COM3, but you can use a different one or even OTA):
 ```
 > esphome run src\esp32-bedroom.yaml --device COM3
 ```
+> [!NOTE]
+> If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
 
-5. [Alexa_Media_Player](https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip) (found in Archives if needed). 
+6. [Alexa_Media_Player](https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip) (found in Archives if needed). 
 This is supposed to be saved in the homeassistant/config/custom_components/alexa_media folder. I am using v4.13.5, but feel free to download a different one from the official repository.
 For more details about how to integrate Alexa_Media_Player just watch [this awesome video](https://www.youtube.com/watch?v=lZpcyu9rnXo) and check out [his GitHub repo](https://github.com/Steven-D-Morgan/Morgans_Modifications/tree/main).
 ![Screenshot of Alexa_Media_Player](images/Capture1.PNG)
 ![Screenshot of Alexa_Media_Player](images/Capture3.PNG)
 ![Screenshot of Alexa_Media_Player](images/Capture2.PNG)
 
+7. Now go to the Home Assistant Settings menu, Automations & Scenes, and Create a New Automation to announce in your Alexa device when the buzzer pin state changes to on.
+![Screenshot of Automation](images/Capture11.PNG)
+
 > [!TIP]
-> It is recommended to use the ESP Home YAML language extension on Visual Studio when editing .yaml files. It makes it easier to avoid mistakes.
+> It is recommended to use the ESP Home YAML language extension on Visual Studio when editing .yaml files. It makes it easier to avoid mistakes. Makes it easy to read, and it describes options by hovering over them.
 > The Remote - SSH Visual Studio extension also makes it easy to log in to the Raspberry Pi, edit files and execute shell commands as needed.
 
 > [!NOTE]
