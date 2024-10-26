@@ -25,11 +25,19 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
 # Instructions
 
 1. Set up your board as you'd like. This is how mine looks.
-I am using this [Mini ESP32](https://www.aliexpress.us/item/3256806443469796.html), this [buzzer](https://www.ebay.com/itm/126428954898) and [this case](Archives/ESP32_wider_opening_for_USB.stl) with this [cover](Archives/ESP32_Top.stl). Please keep in mind this case is not mine. I watched a video on YouTube and downloaded it from a guy that made it there. I just cannot remember where I got it from! I've searched my history and still nothing. So if you happen to figure it out, let me know and I'll update the credits.
+I am using this [Mini ESP32](https://www.aliexpress.us/item/3256806443469796.html), this [buzzer](https://www.ebay.com/itm/126428954898) and [this case](Archives/ESP32_wider_opening_for_USB.stl) with this [cover](Archives/ESP32_Top.stl).
+
+Please keep in mind this case is not mine. I watched a video on YouTube and downloaded it from a guy that made it there. I just cannot remember where I got it from! I've searched my history and still nothing. So if you happen to figure it out, let me know and I'll update the credits.
+
 ![esp32](images/Capture12.PNG)
+
 ![buzzer](images/Capture13.PNG)
+
 ![esp32 case](images/Capture14.PNG)
-You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted. ![material type](images/Capture15.PNG)
+
+You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted. 
+![material type](images/Capture15.PNG)
+
 I soldered the buzzer between GPIO21 and GND, as they were perfectly spaced for the spacing between the buzzer legs. I used a tiny drill bit so the buzzer legs would fit snugly through the cover, and then soldered it with the cover in place, as it is a semi-permanent set up. You can always desolder the buzzer from the board if you want to repurpose it.
 
 2. Make sure to create a secrets.yaml file in the same folder as the .yaml file you are trying to compile with the contents shown below:
