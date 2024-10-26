@@ -68,7 +68,7 @@ debug:
 # Enable Home Assistant API
 ################################################################################
 api:
-  reboot_timeout: 0s
+  reboot_timeout: 5min
   encryption:
     key: !secret api_password
 
