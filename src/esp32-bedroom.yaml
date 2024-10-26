@@ -16,7 +16,6 @@ substitutions:
   airtag_uuid_length: (27)
   buzzer_pin: GPIO21
   led_pin: GPIO2
-  rssi_scan_min: '-65' # minimum rssi value so things show up with their respective values in Home Assistant. Do we even need this?
 
 ################################################################################
 # Globals
@@ -103,14 +102,6 @@ web_server:
   version: 2
   include_internal: true
   local: true
-
-################################################################################
-# Status led --> No need to add, because it is also linked as a binary_sensor
-################################################################################
-# status_led:
-#   pin:
-#     number: ${led_pin}
-#     inverted: false
 
 ################################################################################
 # Time
@@ -269,10 +260,6 @@ sensor:
     device_class: signal_strength
     unit_of_measurement: dBm
     accuracy_decimals: 0
-    # filters:
-    #   - exponential_moving_average:
-    #       alpha: 0.3
-    #       send_every: 1
     on_value:
       then:
         - lambda: |-
@@ -290,26 +277,9 @@ sensor:
     device_class: signal_strength
     unit_of_measurement: dBm
     accuracy_decimals: 0
-    # filters:
-    #   - exponential_moving_average:
-    #       alpha: 0.3
-    #       send_every: 1
-    on_value:
-      then:
-        - lambda: |-
-            // if (id(${device_internal_name}_phone_rssi).state >= id(rssi_threshold_value)) {
-            //   id(room_presence_debounce).publish_state(1);
-            // } else {
-            //   id(room_presence_debounce).publish_state(0);
-            // }
-        # - script.execute: presence_timeout  # Publish 0 if no rssi received
   
   - platform: template
     id: room_presence_debounce
-    # filters:
-    #   - sliding_window_moving_average:
-    #       window_size: 3
-    #       send_every: 1
 
   - platform: homeassistant
     name: ${location} HA RSSI Present Value
@@ -384,7 +354,6 @@ switch:
 ################################################################################
 light:
   - platform: status_led
-    # name: "Status LED" # removed so it doesn't show up in Home Assistant
     pin: ${led_pin}
     id: ${device_internal_name}_status_led
 
@@ -415,8 +384,6 @@ script:
       - delay: 10s
       - lambda: |-
           id(room_presence_debounce).publish_state(0);
-          // id(${device_internal_name}_phone_rssi).publish_state(-120);
-          // id(${device_internal_name}_airtag_rssi).publish_state(-120);
       - script.execute: presence_timeout
     
   # Trigger Function 
@@ -424,17 +391,17 @@ script:
     mode: single
     then:
       - logger.log: "Running Buzzer script"
-      # - switch.turn_on: ${device_internal_name}_buzzer
-      # - delay: 500ms
-      # - switch.turn_off: ${device_internal_name}_buzzer
-      # - delay: 250ms
-      # - switch.turn_on: ${device_internal_name}_buzzer
-      # - delay: 500ms
-      # - switch.turn_off: ${device_internal_name}_buzzer
-      # - delay: 250ms
-      # - switch.turn_on: ${device_internal_name}_buzzer
-      # - delay: 500ms
-      # - switch.turn_off: ${device_internal_name}_buzzer
+      - switch.turn_on: ${device_internal_name}_buzzer
+      - delay: 500ms
+      - switch.turn_off: ${device_internal_name}_buzzer
+      - delay: 250ms
+      - switch.turn_on: ${device_internal_name}_buzzer
+      - delay: 500ms
+      - switch.turn_off: ${device_internal_name}_buzzer
+      - delay: 250ms
+      - switch.turn_on: ${device_internal_name}_buzzer
+      - delay: 500ms
+      - switch.turn_off: ${device_internal_name}_buzzer
       - delay: 2s
 
 ################################################################################
@@ -442,8 +409,6 @@ script:
 ################################################################################
 esp32_ble_tracker:
   scan_parameters:
-    # interval: 2s
-    # window: 200ms
     active: false
     duration: 4s
   on_ble_advertise:
@@ -469,9 +434,6 @@ esp32_ble_tracker:
             for (auto data : x.get_manufacturer_datas()) {
               manuf_data = data.uuid.to_string() + '.' + format_hex_pretty(data.data);
             }
-            // Log the concatenated result, converting to const char* using .c_str()
-            // ESP_LOGI("ble_adv", "Advertised manufacturer data: %s", manuf_data.c_str());
-            
             // Normalize the manuf_data string
             std::string normalized_manuf_data = normalize_string(manuf_data);
 
@@ -484,11 +446,6 @@ esp32_ble_tracker:
               if (id(phone_max_rssi_scanned) >= id(rssi_threshold_value)) {
                 id(${device_internal_name}_phone_rssi).publish_state(id(phone_max_rssi_scanned));
               }
-              // ESP_LOGD("ble_adv", "Found Phone rssi %i", rssi);
-
-              // if (phone_best_rssi) {
-              //   id(${device_internal_name}_phone_rssi).publish_state(*phone_best_rssi);
-              // }
             }
             // If AirTag found... 
             else if ((normalized_manuf_data.find(airtag_uuid) != std::string::npos) && (manuf_data.find("${airtag_uuid_length}") != std::string::npos)) {
@@ -499,22 +456,15 @@ esp32_ble_tracker:
               if (id(airtag_max_rssi_scanned) >= id(rssi_threshold_value)) {
                 id(${device_internal_name}_airtag_rssi).publish_state(id(airtag_max_rssi_scanned));
               }
-              // ESP_LOGD("ble_adv", "Found airtag rssi %i", rssi);
-
-              // if (airtag_best_rssi) {
-              //   id(${device_internal_name}_airtag_rssi).publish_state(*airtag_best_rssi);
-              // }
             }
           }
   on_scan_end: 
     - then:
       - lambda: |- 
           if (id(airtag_max_rssi_scanned)) {
-            // ESP_LOGD("ble_adv", "Found airtag rssi %i", id(airtag_max_rssi_scanned));
             id(${device_internal_name}_airtag_rssi).publish_state(id(airtag_max_rssi_scanned));
           }
           if (id(phone_max_rssi_scanned)) {
-            // ESP_LOGD("ble_adv", "Found phone rssi %i", id(phone_max_rssi_scanned));
             id(${device_internal_name}_phone_rssi).publish_state(id(phone_max_rssi_scanned));
           }
           
