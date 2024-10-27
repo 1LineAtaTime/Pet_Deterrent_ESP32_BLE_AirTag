@@ -52,7 +52,7 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
 I do have a time_rssi_present to configure how long the devices need to be detected in order for the buzzer to go off. You can leave this at 0 seconds so it instantly alerts if they are detected.
   ```
   input_number:
-    time_rssi_present:
+    bedroom_time_present:
       name: Bedroom Time min
       min: 0
       max: 300
@@ -86,9 +86,11 @@ I do have a time_rssi_present to configure how long the devices need to be detec
   > pip3 install esphome
   ```
 
-6. To compile and upload ESPHome yaml file (my port is COM3, but you can use a different one or even OTA):
+6. To compile and upload ESPHome yaml file (my port is COM3, but you can use a different one or even OTA by adding its IP like shown below):
   ```
   > esphome run src\esp32-bedroom.yaml --device COM3
+  > ...or...
+  > esphome run src\esp32-bedroom.yaml --device 10.0.0.195
   ```
   > [!NOTE]
   > If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
@@ -105,6 +107,10 @@ I do have a time_rssi_present to configure how long the devices need to be detec
   ![Screenshot of Automation](images/Capture16.PNG)
 
 9. In Home Assistant, toggle the "Check Phone" switch as needed for your specific board and setup. I have only 1 where it checks for my phone (as the RSSI threshold is quite high at -70), but the other 2 boards I have around the house do not need to check for my phone, since they are right on the plants (with an RSSI threshold of like -30, which means the AirTag has to be almost on top of it to trigger the buzzer). If you are going to be checking for your phone's RSSI, make sure to update the line in the esp32-bedroom.yaml prior to compilation. You can get the phone's uuid from the Home Assistant Android/iPhone app, Settings, Companion App, Manage Sensors, Bluetooth Sensors, BLE Transmitter.
+
+10. Feel free to set up your Home Assistant dashboard however you like it. In my case, I just brought it all to the main Overview screen and show it for each location. If it does not show up, you can try adjusting the Area in Settings, Devices & Entities, Entities, or directly editing the dasbhoard in the Overview screen.
+![image of Area](images/Capture17.PNG)
+![image of Area](images/Capture18.PNG)
 
 > [!TIP]
 > It is recommended to use the ESP Home YAML language extension on Visual Studio when editing .yaml files. It makes it easier to avoid mistakes. Makes it easy to read, and it describes options by hovering over them.

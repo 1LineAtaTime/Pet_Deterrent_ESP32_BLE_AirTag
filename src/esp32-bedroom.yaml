@@ -386,7 +386,10 @@ text_sensor:
 switch:  
   - platform: gpio
     name: "Buzzer"
-    pin: ${buzzer_pin}
+    pin: 
+      number: ${buzzer_pin}
+      mode: 
+        output: true
     id: ${device_internal_name}_buzzer
     icon: mdi:alarm-light
     on_turn_on:
@@ -398,6 +401,7 @@ switch:
     name: "Check Phone"
     id: ${device_internal_name}_check_phone
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
 
   - platform: restart
     name: "Restart"

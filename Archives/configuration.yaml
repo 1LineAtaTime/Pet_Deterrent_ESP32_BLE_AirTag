@@ -10,6 +10,14 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 input_number:
+  bedroom_time_present:
+    name: Bedroom Time min
+    min: 0
+    max: 300
+    step: 1
+    mode: box
+    unit_of_measurement: s
+
   bedroom_rssi_present:
     name: Bedroom RSSI min
     min: -120
