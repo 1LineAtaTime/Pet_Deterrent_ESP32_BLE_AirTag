@@ -17,8 +17,8 @@ In my case, I have 1 of the ESP32 in the bedroom, which will trigger the alarm i
 On the other hand, I do not need to check if my phone is nearby for the ESP32 boards I have next to the plants, which also has a pretty tight threshold (-38, about 4 inches away).
 
 ```
-RAM:   [==        ]  16.5% (used 54088 bytes from 327680 bytes)
-Flash: [=======   ]  73.0% (used 1340077 bytes from 1835008 bytes)
+RAM:   [==        ]  16.5% (used 54208 bytes from 327680 bytes)
+Flash: [=======   ]  74.4% (used 1365897 bytes from 1835008 bytes)
 ```
 FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with "board_build.partitions = min_spiffs.csv" in platformio.ini for the other branch, but the initialization of the ESP Home website formats the board differently, I believe.
 
@@ -34,7 +34,9 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
  You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted.
 
  ![material type](images/Capture15.PNG)
+ 
  I soldered the buzzer between GPIO21 and GND, as they were perfectly spaced for the spacing between the buzzer legs. I used a tiny drill bit so the buzzer legs would fit snugly through the cover, and then soldered it with the cover in place, as it is a semi-permanent set up. You can always desolder the buzzer from the board if you want to repurpose it.
+ Make sure to use the correct buzzer type, like the one I linked above. Otherwise it may not work, or you may fry your pin/board. My buzzer works at the ESP32-supplied voltage and does not need any additional components. You may want to modify this if you are looking for something way louder though.
 
 2. Make sure to create a secrets.yaml file in the same folder as the .yaml file you are trying to compile with the contents shown below:
   ```
@@ -47,8 +49,17 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
   ```
 
 3. Add the lines below in your [homeassistant/config/configuration.yaml](Archives/configuration.yaml). This will create an input text box in Home Assistant that ESP Home will use as the RSSI threshold value. You can then tweak the value to your desired threshold from the Home Assistant dashboard without having to restart anything. Changes will happen in the blink of an eye! You can either add one of these for each ESP32 location you have, or use the same for all of them.
+I do have a time_rssi_present to configure how long the devices need to be detected in order for the buzzer to go off. You can leave this at 0 seconds so it instantly alerts if they are detected.
   ```
   input_number:
+    time_rssi_present:
+      name: Bedroom Time min
+      min: 0
+      max: 300
+      step: 1
+      mode: box
+      unit_of_measurement: s
+
     bedroom_rssi_present:
       name: Bedroom RSSI min
       min: -120
@@ -91,6 +102,7 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
 
 8. Now go to the Home Assistant Settings menu, Automations & Scenes, and Create a New Automation to announce in your Alexa device when the buzzer pin state changes to on.
   ![Screenshot of Automation](images/Capture11.PNG)
+  ![Screenshot of Automation](images/Capture16.PNG)
 
 9. In Home Assistant, toggle the "Check Phone" switch as needed for your specific board and setup. I have only 1 where it checks for my phone (as the RSSI threshold is quite high at -70), but the other 2 boards I have around the house do not need to check for my phone, since they are right on the plants (with an RSSI threshold of like -30, which means the AirTag has to be almost on top of it to trigger the buzzer). If you are going to be checking for your phone's RSSI, make sure to update the line in the esp32-bedroom.yaml prior to compilation. You can get the phone's uuid from the Home Assistant Android/iPhone app, Settings, Companion App, Manage Sensors, Bluetooth Sensors, BLE Transmitter.
 
