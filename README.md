@@ -25,92 +25,92 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
 # Instructions
 
 1. Set up your board as you'd like. This is how mine looks.
-  I am using this [Mini ESP32](https://www.aliexpress.us/item/3256806443469796.html), this [buzzer](https://www.ebay.com/itm/126428954898) and [this case](Archives/ESP32_wider_opening_for_USB.stl) with this [cover](Archives/ESP32_Top.stl).
+    I am using this [Mini ESP32](https://www.aliexpress.us/item/3256806443469796.html), this [buzzer](https://www.ebay.com/itm/126428954898) and [this case](Archives/ESP32_wider_opening_for_USB.stl) with this [cover](Archives/ESP32_Top.stl).
 
- Please keep in mind this case is not mine. I watched a video on YouTube and downloaded it from a guy that made it there. I just cannot remember where I got it from! I've searched my history and still nothing. So if you happen to figure it out, let me know and I'll update the credits.
+    Please keep in mind this case is not mine. I watched a video on YouTube and downloaded it from a guy that made it there. I just cannot remember where I got it from! I've searched my history and still nothing. So if you happen to figure it out, let me know and I'll update the credits.
 
- ![esp32](images/Capture12.PNG) ![buzzer](images/Capture13.PNG) ![esp32 case](images/Capture14.PNG)
+    ![esp32](images/Capture12.PNG) ![buzzer](images/Capture13.PNG) ![esp32 case](images/Capture14.PNG)
 
- You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted.
+    You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted.
 
- ![material type](images/Capture15.PNG)
- 
- I soldered the buzzer between GPIO21 and GND, as they were perfectly spaced for the spacing between the buzzer legs. I used a tiny drill bit so the buzzer legs would fit snugly through the cover, and then soldered it with the cover in place, as it is a semi-permanent set up. You can always desolder the buzzer from the board if you want to repurpose it.
- Make sure to use the correct buzzer type, like the one I linked above. Otherwise it may not work, or you may fry your pin/board. My buzzer works at the ESP32-supplied voltage and does not need any additional components. You may want to modify this if you are looking for something way louder though.
+    ![material type](images/Capture15.PNG)
+    
+    I soldered the buzzer between GPIO21 and GND, as they were perfectly spaced for the spacing between the buzzer legs. I used a tiny drill bit so the buzzer legs would fit snugly through the cover, and then soldered it with the cover in place, as it is a semi-permanent set up. You can always desolder the buzzer from the board if you want to repurpose it.
+    Make sure to use the correct buzzer type, like the one I linked above. Otherwise it may not work, or you may fry your pin/board. My buzzer works at the ESP32-supplied voltage and does not need any additional components. You may want to modify this if you are looking for something way louder though.
 
 2. Make sure to create a secrets.yaml file in the same folder as the .yaml file you are trying to compile with the contents shown below:
-  ```
-  # Your Wi-Fi SSID and password
-  wifi_ssid: "your wifi ssid"
-  wifi_password: "your password"
+    ```
+    # Your Wi-Fi SSID and password
+    wifi_ssid: "your wifi ssid"
+    wifi_password: "your password"
 
-  ota_password: "whatever ota password you put in home assistant and your installation of ESPHome"
-  api_password: "whatever api password you put in home assistant and your installation of ESPHome"
-  ```
+    ota_password: "whatever ota password you put in home assistant and your installation of ESPHome"
+    api_password: "whatever api password you put in home assistant and your installation of ESPHome"
+    ```
 
 3. Add the lines below in your [homeassistant/config/configuration.yaml](Archives/configuration.yaml). This will create an input text box in Home Assistant that ESP Home will use as the RSSI threshold value. You can then tweak the value to your desired threshold from the Home Assistant dashboard without having to restart anything. Changes will happen in the blink of an eye! You can either add one of these for each ESP32 location you have, or use the same for all of them.
 I do have a time_rssi_present to configure how long the devices need to be detected in order for the buzzer to go off. You can leave this at 0 seconds so it instantly alerts if they are detected.
-  ```
-  input_number:
-    bedroom_time_present:
-      name: Bedroom Time min
-      min: 0
-      max: 300
-      step: 1
-      mode: box
-      unit_of_measurement: s
+    ```
+    input_number:
+      bedroom_time_present:
+        name: Bedroom Time min
+        min: 0
+        max: 300
+        step: 1
+        mode: box
+        unit_of_measurement: s
 
-    bedroom_rssi_present:
-      name: Bedroom RSSI min
-      min: -120
-      max: -20
-      step: 1
-      mode: box
-      unit_of_measurement: dBm
-    
-    plants_rssi_present:
-      name: Plants RSSI min
-      min: -120
-      max: -20
-      step: 1
-      mode: box
-      unit_of_measurement: dBm
-  ```
-  ![Screenshot of the Home Assistant dashboard with RSSI min threshold](images/Capture8.PNG)
+      bedroom_rssi_present:
+        name: Bedroom RSSI min
+        min: -120
+        max: -20
+        step: 1
+        mode: box
+        unit_of_measurement: dBm
+      
+      plants_rssi_present:
+        name: Plants RSSI min
+        min: -120
+        max: -20
+        step: 1
+        mode: box
+        unit_of_measurement: dBm
+    ```
+    ![Screenshot of the Home Assistant dashboard with RSSI min threshold](images/Capture8.PNG)
 
 4. Go to the [ESPHome website](https://web.esphome.io/?dashboard_wizard) and connect your board. Then select "Prepare for first use" so the board gets configured correctly. ![Screenshot of ESPHome Website](images/Capture10.PNG)
 
 5. To install ESPHome compiler locally in your computer:
-  ```
-  > pip3 install wheel
-  > pip3 install esphome
-  ```
+    ```
+    > pip3 install wheel
+    > pip3 install esphome
+    ```
 
 6. To compile and upload ESPHome yaml file (my port is COM3, but you can use a different one or even OTA by adding its IP like shown below):
-  ```
-  > esphome run src\esp32-bedroom.yaml --device COM3
-  > ...or...
-  > esphome run src\esp32-bedroom.yaml --device 10.0.0.195
-  ```
-  > [!NOTE]
-  > If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
+    ```
+    > esphome run src\esp32-bedroom.yaml --device COM3
+      ...or...
+    > esphome run src\esp32-bedroom.yaml --device 10.0.0.195
+    ```
+    > [!NOTE]
+    > If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
 
 7. [Alexa_Media_Player](https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip) (found in Archives if needed). 
-  This is supposed to be saved in the homeassistant/config/custom_components/alexa_media folder. I am using v4.13.5, but feel free to download a different one from the official repository.
-  For more details about how to integrate Alexa_Media_Player just watch [this awesome video](https://www.youtube.com/watch?v=lZpcyu9rnXo) and check out [his GitHub repo](https://github.com/Steven-D-Morgan/Morgans_Modifications/tree/main).
-  ![Screenshot of Alexa_Media_Player](images/Capture1.PNG)
-  ![Screenshot of Alexa_Media_Player](images/Capture3.PNG)
-  ![Screenshot of Alexa_Media_Player](images/Capture2.PNG)
+    This is supposed to be saved in the homeassistant/config/custom_components/alexa_media folder. I am using v4.13.5, but feel free to download a different one from the official repository.
+    For more details about how to integrate Alexa_Media_Player just watch [this awesome video](https://www.youtube.com/watch?v=lZpcyu9rnXo) and check out [his GitHub repo](https://github.com/Steven-D-Morgan/Morgans_Modifications/tree/main).
+    ![Screenshot of Alexa_Media_Player](images/Capture1.PNG)
+    ![Screenshot of Alexa_Media_Player](images/Capture3.PNG)
+    ![Screenshot of Alexa_Media_Player](images/Capture2.PNG)
 
 8. Now go to the Home Assistant Settings menu, Automations & Scenes, and Create a New Automation to announce in your Alexa device when the buzzer pin state changes to on.
-  ![Screenshot of Automation](images/Capture11.PNG)
-  ![Screenshot of Automation](images/Capture16.PNG)
+    ![Screenshot of Automation](images/Capture11.PNG)
+    ![Screenshot of Automation](images/Capture16.PNG)
 
 9. In Home Assistant, toggle the "Check Phone" switch as needed for your specific board and setup. I have only 1 where it checks for my phone (as the RSSI threshold is quite high at -70), but the other 2 boards I have around the house do not need to check for my phone, since they are right on the plants (with an RSSI threshold of like -30, which means the AirTag has to be almost on top of it to trigger the buzzer). If you are going to be checking for your phone's RSSI, make sure to update the line in the esp32-bedroom.yaml prior to compilation. You can get the phone's uuid from the Home Assistant Android/iPhone app, Settings, Companion App, Manage Sensors, Bluetooth Sensors, BLE Transmitter.
 
 10. Feel free to set up your Home Assistant dashboard however you like it. In my case, I just brought it all to the main Overview screen and show it for each location. If it does not show up, you can try adjusting the Area in Settings, Devices & Entities, Entities, or directly editing the dasbhoard in the Overview screen.
-![image of Area](images/Capture17.PNG)
-![image of Area](images/Capture18.PNG)
+    ![image of Area](images/Capture17.PNG)
+    ![image of Area](images/Capture18.PNG)
 
 > [!TIP]
 > It is recommended to use the ESP Home YAML language extension on Visual Studio when editing .yaml files. It makes it easier to avoid mistakes. Makes it easy to read, and it describes options by hovering over them.
