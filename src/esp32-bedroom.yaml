@@ -5,6 +5,7 @@
 # Substitution Variables
 ################################################################################
 substitutions:
+  sketchVersion: "1.0"
   location: bedroom # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
@@ -135,11 +136,11 @@ binary_sensor:
     lambda: |-
       std::string phone_uuid = "${phone_uuid}";
       std::string location = "${location}";
+      unsigned long current_time = id(homeassistant_time).now().timestamp;
 
       if (id(room_presence_debounce).state > 0.99) { //need to change the debounce so it's more snappy?
         if ((id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_phone_rssi).state >= id(rssi_threshold_value)) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
           if (id(homeassistant_time).now().is_valid()) {
-            unsigned long current_time = id(homeassistant_time).now().timestamp;
 
             // Check if `last_event_time` is set, and if not, initialize it
             if (id(last_event_time) == 0) {
@@ -154,13 +155,14 @@ binary_sensor:
               return id(room_presence).state;
             } else if (time_difference >= id(rssi_threshold_value)) {  // if we have seen these devices for X seconds (from Home Assistant)
               id(last_event_time) = current_time;
-              id(trigger_buzzer).execute();
+              if (id(${device_internal_name}_use_buzzer).state) {
+                id(trigger_buzzer).execute();
+              }
               return true;
             }
           }
         } else if (!(id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
           if (id(homeassistant_time).now().is_valid()) {
-            unsigned long current_time = id(homeassistant_time).now().timestamp;
 
             // Check if `last_event_time` is set, and if not, initialize it
             if (id(last_event_time) == 0) {
@@ -175,18 +177,24 @@ binary_sensor:
               return id(room_presence).state;
             } else if (time_difference >= id(rssi_threshold_value)) {  // if we have seen these devices for X seconds (from Home Assistant)
               id(last_event_time) = current_time;
-              id(trigger_buzzer).execute();
+              if (id(${device_internal_name}_use_buzzer).state) {
+                id(trigger_buzzer).execute();
+              }
               return true;
             }
           }
         } else {
+          id(last_event_time) = 0;
           return false;
         }
       } else if (id(room_presence_debounce).state < 0.01) {
+        id(last_event_time) = 0;
         return false;
       } else {
+        id(last_event_time) = 0;
         return id(room_presence).state;
-      }
+      } 
+      id(last_event_time) = 0;
       return id(room_presence).state;
 
 ################################################################################
@@ -349,6 +357,13 @@ sensor:
         - lambda: |-
             id(time_threshold_value) = id(ha_time_threshold).state;
             ESP_LOGI("ble_adv", "Time Threshold updated from HA: %i seconds", id(time_threshold_value));
+
+  - platform: template
+    name: Firmware Sketch Version
+    id: ${device_internal_name}_firmware_sketch_version
+    icon: mdi:new-box
+    entity_category: diagnostic
+    lambda: return ${sketchVersion};
     
 ################################################################################
 # Text Sensors
@@ -402,6 +417,12 @@ switch:
     id: ${device_internal_name}_check_phone
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Buzzer when detected"
+    id: ${device_internal_name}_use_buzzer
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
 
   - platform: restart
     name: "Restart"

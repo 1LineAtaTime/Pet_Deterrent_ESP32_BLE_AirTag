@@ -17,8 +17,8 @@ In my case, I have 1 of the ESP32 in the bedroom, which will trigger the alarm i
 On the other hand, I do not need to check if my phone is nearby for the ESP32 boards I have next to the plants, which also has a pretty tight threshold (-38, about 4 inches away).
 
 ```
-RAM:   [==        ]  16.5% (used 54208 bytes from 327680 bytes)
-Flash: [=======   ]  74.4% (used 1365897 bytes from 1835008 bytes)
+RAM:   [==        ]  16.5% (used 54216 bytes from 327680 bytes)
+Flash: [=======   ]  74.5% (used 1366497 bytes from 1835008 bytes)
 ```
 FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with "board_build.partitions = min_spiffs.csv" in platformio.ini for the other branch, but the initialization of the ESP Home website formats the board differently, I believe.
 
@@ -54,6 +54,14 @@ I do have a time_rssi_present to configure how long the devices need to be detec
     input_number:
       bedroom_time_present:
         name: Bedroom Time min
+        min: 0
+        max: 300
+        step: 1
+        mode: box
+        unit_of_measurement: s
+
+      plants_time_present:
+        name: Plants Time min
         min: 0
         max: 300
         step: 1
