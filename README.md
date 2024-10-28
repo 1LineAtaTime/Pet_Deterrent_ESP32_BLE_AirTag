@@ -102,8 +102,8 @@ I do have a time_rssi_present to configure how long the devices need to be detec
       ...or...
     > esphome run src\esp32-bedroom.yaml --device 10.0.0.195
     ```
-    > [!NOTE]
-    > If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
+> [!NOTE]
+> If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
 
 7. Now you can go to your ESPHome dashboard and add the device if it doesn't already show up in there. You can select new device if that makes it any easier. Another option is going to Home Assistant's Settings, Devices & Integrations, and then either Add Integration, or Configure device, if it has already found the ESPHome device.
     I also went ahead and added my secrets.yaml file to the secrets tab in this screen, in case I ever need to update things through the browser. 
