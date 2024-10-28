@@ -1,3 +1,5 @@
+![overview](images/Capture19.PNG)
+
 # Introduction
 
 Please note there are 2 different branches in this repo: this one uses ESPhome and Alexa_Media_Player instead to integrate with Home Assistant, Alexa, OTA, monitoring, etc. The other one is standalone with "Sinric Pro" to integrate with Alexa and OTA.
@@ -31,7 +33,7 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
 
     ![esp32](images/Capture12.PNG) ![buzzer](images/Capture13.PNG) ![esp32 case](images/Capture14.PNG)
 
-    You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted.
+    You can use any service you want to print the case. I used JLCPCB.com as they had a great price for the material I wanted. Don't let the "3D-printed" part of it fool you into thinking it is not a solid case. It definitely is if you use SLA, and it won't break when you open and close it a million times while tinkering.
 
     ![material type](images/Capture15.PNG)
     
@@ -49,7 +51,7 @@ FYI, I had initially reduced the SPIFFS partition while leaving OTA intact with 
     ```
 
 3. Add the lines below in your [homeassistant/config/configuration.yaml](Archives/configuration.yaml). This will create an input text box in Home Assistant that ESP Home will use as the RSSI threshold value. You can then tweak the value to your desired threshold from the Home Assistant dashboard without having to restart anything. Changes will happen in the blink of an eye! You can either add one of these for each ESP32 location you have, or use the same for all of them.
-I do have a time_rssi_present to configure how long the devices need to be detected in order for the buzzer to go off. You can leave this at 0 seconds so it instantly alerts if they are detected.
+I do have a time_rssi_present to configure how long the devices need to be detected in order for the buzzer to go off. You can leave this at 0 seconds so it instantly alerts if they are detected. Please note that the location variable substitution from the ESPHome yaml file has to be at the beginning of the name of these input variables, so ESPHome can find them.
     ```
     input_number:
       bedroom_time_present:
@@ -103,20 +105,25 @@ I do have a time_rssi_present to configure how long the devices need to be detec
     > [!NOTE]
     > If you are facing compilation errors after making changes, you may need to do a clean compilation by deleting the .esphome folder.
 
-7. [Alexa_Media_Player](https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip) (found in Archives if needed). 
+7. Now you can go to your ESPHome dashboard and add the device if it doesn't already show up in there. You can select new device if that makes it any easier. Another option is going to Home Assistant's Settings, Devices & Integrations, and then either Add Integration, or Configure device, if it has already found the ESPHome device.
+    I also went ahead and added my secrets.yaml file to the secrets tab in this screen, in case I ever need to update things through the browser. 
+    I have also noticed that it may be necessary to have different yaml file names to avoid conflicts, but once you create a new device you can just use the new name as needed.
+    ![ESP Home screenshot](images/Capture19.PNG)
+
+8. [Alexa_Media_Player](https://github.com/alandtse/alexa_media_player/releases/download/v4.13.5/alexa_media.zip) (found in Archives if needed). 
     This is supposed to be saved in the homeassistant/config/custom_components/alexa_media folder. I am using v4.13.5, but feel free to download a different one from the official repository.
     For more details about how to integrate Alexa_Media_Player just watch [this awesome video](https://www.youtube.com/watch?v=lZpcyu9rnXo) and check out [his GitHub repo](https://github.com/Steven-D-Morgan/Morgans_Modifications/tree/main).
     ![Screenshot of Alexa_Media_Player](images/Capture1.PNG)
     ![Screenshot of Alexa_Media_Player](images/Capture3.PNG)
     ![Screenshot of Alexa_Media_Player](images/Capture2.PNG)
 
-8. Now go to the Home Assistant Settings menu, Automations & Scenes, and Create a New Automation to announce in your Alexa device when the buzzer pin state changes to on.
+9. Now go to the Home Assistant Settings menu, Automations & Scenes, and Create a New Automation to announce in your Alexa device when the buzzer pin state changes to on.
     ![Screenshot of Automation](images/Capture11.PNG)
     ![Screenshot of Automation](images/Capture16.PNG)
 
-9. In Home Assistant, toggle the "Check Phone" switch as needed for your specific board and setup. I have only 1 where it checks for my phone (as the RSSI threshold is quite high at -70), but the other 2 boards I have around the house do not need to check for my phone, since they are right on the plants (with an RSSI threshold of like -30, which means the AirTag has to be almost on top of it to trigger the buzzer). If you are going to be checking for your phone's RSSI, make sure to update the line in the esp32-bedroom.yaml prior to compilation. You can get the phone's uuid from the Home Assistant Android/iPhone app, Settings, Companion App, Manage Sensors, Bluetooth Sensors, BLE Transmitter.
+10. In Home Assistant, toggle the "Check Phone" switch as needed for your specific board and setup. I have only 1 where it checks for my phone (as the RSSI threshold is quite high at -70), but the other 2 boards I have around the house do not need to check for my phone, since they are right on the plants (with an RSSI threshold of like -30, which means the AirTag has to be almost on top of it to trigger the buzzer). If you are going to be checking for your phone's RSSI, make sure to update the line in the esp32-bedroom.yaml prior to compilation. You can get the phone's uuid from the Home Assistant Android/iPhone app, Settings, Companion App, Manage Sensors, Bluetooth Sensors, BLE Transmitter.
 
-10. Feel free to set up your Home Assistant dashboard however you like it. In my case, I just brought it all to the main Overview screen and show it for each location. If it does not show up, you can try adjusting the Area in Settings, Devices & Entities, Entities, or directly editing the dasbhoard in the Overview screen.
+11. Feel free to set up your Home Assistant dashboard however you like it. In my case, I just brought it all to the main Overview screen and show it for each location. If it does not show up, you can try adjusting the Area in Settings, Devices & Entities, Entities, or directly editing the dasbhoard in the Overview screen.
     ![image of Area](images/Capture17.PNG)
     ![image of Area](images/Capture18.PNG)
 

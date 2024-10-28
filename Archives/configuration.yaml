@@ -18,6 +18,14 @@ input_number:
     mode: box
     unit_of_measurement: s
 
+  plants_time_present:
+    name: Plants Time min
+    min: 0
+    max: 300
+    step: 1
+    mode: box
+    unit_of_measurement: s
+
   bedroom_rssi_present:
     name: Bedroom RSSI min
     min: -120
