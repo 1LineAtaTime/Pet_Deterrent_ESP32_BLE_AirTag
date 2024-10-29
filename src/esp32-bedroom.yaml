@@ -5,7 +5,7 @@
 # Substitution Variables
 ################################################################################
 substitutions:
-  sketchVersion: "1.0"
+  sketchVersion: "1.1"
   location: bedroom # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
@@ -139,7 +139,7 @@ binary_sensor:
       unsigned long current_time = id(homeassistant_time).now().timestamp;
 
       if (id(room_presence_debounce).state > 0.99) { //need to change the debounce so it's more snappy?
-        if ((id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_phone_rssi).state >= id(rssi_threshold_value)) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
+        if ((id(${device_internal_name}_check_phone).state) && (id(${device_internal_name}_phone_rssi).state < id(rssi_threshold_value)) && (id(${device_internal_name}_airtag_rssi).state >= id(rssi_threshold_value))) {
           if (id(homeassistant_time).now().is_valid()) {
 
             // Check if `last_event_time` is set, and if not, initialize it
