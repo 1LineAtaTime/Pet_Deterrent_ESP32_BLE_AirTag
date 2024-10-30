@@ -1,0 +1,8 @@
+with 0.888 multiplier on usage %
+Flash: [=======   ]  72.7% (used 1334665 bytes from 1835008 bytes) 
+[10:25:28][D][flash_usage:270]: Used flash for sketch: 1508112 bytes, Total sketch space: 1835008 bytes
+[10:25:28][D][sensor:094]: 'ESP Flash Usage': Sending state 72.98080 % with 1 decimals of accuracy
+
+Flash: [=======   ]  74.5% (used 1366353 bytes from 1835008 bytes)
+[10:29:59]←[0;36m[D][flash_usage:270]: Used flash for sketch: 1550416 bytes, Total sketch space: 1835008 bytes←[0m
+[10:29:59]←[0;36m[D][sensor:094]: 'ESP Flash Usage': Sending state 75.02798 % with 1 decimals of accuracy←[0m

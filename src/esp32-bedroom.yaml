@@ -5,7 +5,7 @@
 # Substitution Variables
 ################################################################################
 substitutions:
-  sketchVersion: "1.1"
+  sketchVersion: "1.2"
   location: bedroom # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
@@ -105,13 +105,13 @@ wifi:
 captive_portal:
 
 ################################################################################
-# Web Server
+# Web Server --> do we even need it now that it is integrated to Home Assistant?
 ################################################################################
-web_server:
-  port: 80
-  version: 2
-  include_internal: true
-  local: true
+# web_server:
+#   port: 80
+#   version: 2
+#   include_internal: true
+#   local: true
 
 ################################################################################
 # Time
@@ -150,7 +150,7 @@ binary_sensor:
             // Calculate the time difference in seconds
             unsigned long time_difference = current_time - id(last_event_time);
 
-            if (time_difference >= 50) {  // If a lot of time has passed, let's reset it...
+            if (time_difference >= 300) {  // If a lot of time has passed, let's reset it...
               id(last_event_time) = current_time;
               return id(room_presence).state;
             } else if (time_difference >= id(rssi_threshold_value)) {  // if we have seen these devices for X seconds (from Home Assistant)
@@ -172,7 +172,7 @@ binary_sensor:
             // Calculate the time difference in seconds
             unsigned long time_difference = current_time - id(last_event_time);
 
-            if (time_difference >= 50) {  // If a lot of time has passed, let's reset it...
+            if (time_difference >= 300) {  // If a lot of time has passed, let's reset it...
               id(last_event_time) = current_time;
               return id(room_presence).state;
             } else if (time_difference >= id(rssi_threshold_value)) {  // if we have seen these devices for X seconds (from Home Assistant)
@@ -248,8 +248,8 @@ sensor:
     name: "ESP Flash Usage"
     id: ${device_internal_name}_flash_usage
     unit_of_measurement: "%"
-    accuracy_decimals: 1
-    update_interval: ${device_sampling_time}
+    accuracy_decimals: 0
+    update_interval: 10s
     icon: mdi:percent
     entity_category: diagnostic
     lambda: |-
@@ -266,6 +266,13 @@ sensor:
       // Calculate percentage of used space
       float sketch_flash_usage_percentage = (used_sketch_space * 0.888 * 100.0) / total_sketch_space;
 
+      // No need to keep calculating or sending this value after a minute from safe start.
+      int seconds = round(id(${device_internal_name}_uptime_sensor).raw_state);
+      if (seconds >= 60) {
+        id(${device_internal_name}_flash_usage).stop_poller();
+        id(${device_internal_name}_firmware_sketch_version).stop_poller();
+        ESP_LOGD("polling_attributes", "Stopped polling Flash Usage and Sketch Version");
+      }
       // Log flash usage details for debugging Used flash for sketch: 1533200 bytes, Total sketch space: 1835008 bytes
       ESP_LOGD("flash_usage", "Used flash for sketch: %u bytes, Total sketch space: %u bytes", used_sketch_space, total_sketch_space);
 
@@ -363,6 +370,7 @@ sensor:
     id: ${device_internal_name}_firmware_sketch_version
     icon: mdi:new-box
     entity_category: diagnostic
+    update_interval: ${device_sampling_time}
     lambda: return ${sketchVersion};
     
 ################################################################################
@@ -494,6 +502,7 @@ esp32_ble_tracker:
   scan_parameters:
     active: false
     duration: 4s
+    continuous: true
   on_ble_advertise:
     - then:
       - lambda: |-
