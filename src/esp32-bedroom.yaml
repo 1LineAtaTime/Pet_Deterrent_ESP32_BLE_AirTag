@@ -5,7 +5,7 @@
 # Substitution Variables
 ################################################################################
 substitutions:
-  sketchVersion: "1.2"
+  sketchVersion: "1.3"
   location: bedroom # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
@@ -78,7 +78,7 @@ debug:
 # Enable Home Assistant API
 ################################################################################
 api:
-  reboot_timeout: 5min
+  reboot_timeout: 15min #default
   encryption:
     key: !secret api_password
 
@@ -93,6 +93,7 @@ ota:
 # WiFi
 ################################################################################
 wifi:
+  reboot_timeout: 15min #default
   networks:
     - ssid: !secret wifi_ssid
       password: !secret wifi_password
@@ -105,13 +106,13 @@ wifi:
 captive_portal:
 
 ################################################################################
-# Web Server --> do we even need it now that it is integrated to Home Assistant?
+# Web Server --> using it to debug things as the RaspPI3B Home Assistant has been crashing lately
 ################################################################################
-# web_server:
-#   port: 80
-#   version: 2
-#   include_internal: true
-#   local: true
+web_server:
+  port: 80
+  version: 2
+  include_internal: true
+  local: true
 
 ################################################################################
 # Time
