@@ -7,3 +7,5 @@
 credentials.h
 secrets.yaml
 .esphome
+CLAUDE.MD
+.claude

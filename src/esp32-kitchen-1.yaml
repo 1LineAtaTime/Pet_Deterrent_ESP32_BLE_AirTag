@@ -6,7 +6,7 @@
 ################################################################################
 substitutions:
   sketchVersion: "1.4"
-  location: bedroom # bedroom or plants
+  location: kitchen1 # bedroom or plants
   device_internal_name: esp32${location}
   device_wifi_name: esp32_${location}_wifi
   device_friendly_name: ESP32 ${location}
